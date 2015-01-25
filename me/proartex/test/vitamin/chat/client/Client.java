@@ -70,7 +70,7 @@ public class Client extends Thread {
                 stdin.close();
                 socket.close();
             } catch (Throwable e) {
-                e.printStackTrace();
+                //NOP
             }
         }
     }
