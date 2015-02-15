@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.nio;
+package me.proartex.test.vitamin.chat.useless;
 
 import java.io.IOException;
 import java.net.InetAddress;

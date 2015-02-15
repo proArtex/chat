@@ -1,4 +1,8 @@
-package me.proartex.test.vitamin.chat.nio;
+package me.proartex.test.vitamin.chat.useless;
+
+import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.client.CommandFactory;
+import me.proartex.test.vitamin.chat.Protocol;
 
 import java.io.BufferedReader;
 import java.io.IOException;

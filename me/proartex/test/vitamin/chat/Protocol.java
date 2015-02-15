@@ -1,4 +1,8 @@
-package me.proartex.test.vitamin.chat.nio;
+package me.proartex.test.vitamin.chat;
+
+import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.exceptions.UnknownParseTypeException;
+import me.proartex.test.vitamin.chat.server.Server;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,7 +15,7 @@ public class Protocol {
     private static final String ARGUMENTS_DELIMITER = ";";
     private static final String VALUE_DELIMITER     = "=";
 
-    protected static String serialize(Executable command) {
+    public static String serialize(Executable command) {
         Class cl                        = command.getClass();
         StringBuilder serializedCommand = new StringBuilder(COMMAND_DELIMITER);
 
@@ -32,7 +36,7 @@ public class Protocol {
                         .append(";");
             }
 
-            System.out.println("command: '"+serializedCommand+"'");
+//            System.out.println("command: '"+serializedCommand+"'");
             return serializedCommand.toString();
         }
         catch (IllegalAccessException e) {
@@ -42,17 +46,17 @@ public class Protocol {
         return null;
     }
 
-    protected static ArrayList<Executable> deserialize(Server server, String serializedCommand) {
-
+    public static ArrayList<Executable> deserialize(Server server, String serializedCommand) {
         ArrayList<Executable> executableCommands = new ArrayList<>();
 
         try {
             for (String command : serializedCommand.split(COMMAND_DELIMITER)) {
+                command = command.trim();
                 if ("".equals(command)) continue;
 
                 Class[] classes;
                 Object[] arguments;
-                System.out.println(serializedCommand);
+//                System.out.println(serializedCommand);
                 String className = command.substring(0, command.indexOf(CLASSNAME_DELIMITER));
                 Class<?> cl      = Class.forName(className);
 //                System.out.println("class: " + className);
@@ -64,11 +68,11 @@ public class Protocol {
                 arguments = new Object[args.length];
 
                 for (int i = 0; i < args.length; i++) {
-                    String key = args[i].substring(0, args[i].indexOf(VALUE_DELIMITER));
+                    String key   = args[i].substring(0, args[i].indexOf(VALUE_DELIMITER));
                     String value = args[i].substring(args[i].indexOf(VALUE_DELIMITER) + VALUE_DELIMITER.length());
 //                    System.out.println("key: " + key + " value: " + value);
 
-                    classes[i]   = Class.forName(key);
+                    classes[i]   = getClassFor(key);
                     arguments[i] = Server.class == classes[i] ? server : parseString(value, classes[i]);
                 }
 
@@ -97,6 +101,29 @@ public class Protocol {
 //        return matcher.matches();
 //    }
 
+    private static Class getClassFor(String value) throws ClassNotFoundException {
+        switch (value) {
+            case "int":
+                return int.class;
+            case "long":
+                return long.class;
+            case "float":
+                return float.class;
+            case "double":
+                return float.class;
+            case "short":
+                return short.class;
+            case "byte":
+                return byte.class;
+            case "char":
+                return char.class;
+            case "boolean":
+                return boolean.class;
+            default:
+                return Class.forName(value);
+        }
+    }
+
     private static Object parseString(String value, Class cl) {
         if ("null".equals(value))
             return null;
@@ -118,9 +145,7 @@ public class Protocol {
             return Byte.parseByte(value);
         }
         else {
-//            throw new NotParsedTypeException();
-            System.out.println("EXCEPTION HERE");
-            return null;
+            throw new UnknownParseTypeException("undefined parser's " + cl);
         }
     }
 }
