@@ -13,8 +13,8 @@ import java.net.UnknownHostException;
 
 public class Client extends Thread {
 
-//    private String host        = "127.0.0.1";
-    private final String host  = "proartex.me";
+    private String host        = "127.0.0.1";
+//    private final String host  = "proartex.me";
     private int port           = 9993;
     private int maxTries       = 10;
     private int tries          = 0;
