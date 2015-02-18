@@ -4,6 +4,7 @@ import me.proartex.test.vitamin.chat.commands.Executable;
 import me.proartex.test.vitamin.chat.exceptions.UnknownParseTypeException;
 import me.proartex.test.vitamin.chat.server.Server;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -23,9 +24,9 @@ public class Protocol {
             serializedCommand.append(cl.getName()).append(CLASSNAME_DELIMITER);
 
             for (java.lang.reflect.Field field : cl.getDeclaredFields()) {
-                //do not serialize name and description
-//                if ("NAME".equals(field.getName()) || "DESCRIPTION".equals(field.getName()))
-//                    continue;
+                //do not serialize server
+                if ("server".equals(field.getName()))
+                    continue;
 
                 field.setAccessible(true);
                 serializedCommand
@@ -52,31 +53,42 @@ public class Protocol {
         try {
             for (String command : serializedCommand.split(COMMAND_DELIMITER)) {
                 command = command.trim();
-                if ("".equals(command)) continue;
+                if ("".equals(command))
+                    continue;
 
-                Class[] classes;
-                Object[] arguments;
-//                System.out.println(serializedCommand);
+                Class[] classes, fullClasses;
+                Object[] arguments, fullArguments;
+
                 String className = command.substring(0, command.indexOf(CLASSNAME_DELIMITER));
                 Class<?> cl      = Class.forName(className);
-//                System.out.println("class: " + className);
 
                 String argsLine = command.substring(command.indexOf(CLASSNAME_DELIMITER) + CLASSNAME_DELIMITER.length());
                 String[] args   = argsLine.split(ARGUMENTS_DELIMITER);
+                int argsLength  = (args.length == 1 && "".equals(args[0]))
+                                ? 0
+                                : args.length;
 
-                classes   = new Class[args.length];
-                arguments = new Object[args.length];
+                //origin and server reserved arrays
+                classes       = new Class[argsLength];
+                arguments     = new Object[argsLength];
+                fullClasses   = new Class[argsLength+1];
+                fullArguments = new Object[argsLength+1];
 
-                for (int i = 0; i < args.length; i++) {
+                for (int i = 0; i < argsLength; i++) {
                     String key   = args[i].substring(0, args[i].indexOf(VALUE_DELIMITER));
                     String value = args[i].substring(args[i].indexOf(VALUE_DELIMITER) + VALUE_DELIMITER.length());
-//                    System.out.println("key: " + key + " value: " + value);
 
                     classes[i]   = getClassFor(key);
-                    arguments[i] = Server.class == classes[i] ? server : parseString(value, classes[i]);
+                    arguments[i] = parseString(value, classes[i]);
                 }
 
-                Executable executableCommand = (Executable) cl.getDeclaredConstructor(classes).newInstance(arguments);
+                //put server inside
+                fullClasses[0]   = Server.class;
+                fullArguments[0] = server;
+                System.arraycopy(classes, 0, fullClasses, 1, classes.length);
+                System.arraycopy(arguments, 0, fullArguments, 1, arguments.length);
+
+                Executable executableCommand = (Executable) cl.getDeclaredConstructor(fullClasses).newInstance(fullArguments);
                 executableCommands.add(executableCommand);
             }
         }
