@@ -5,8 +5,11 @@ import me.proartex.test.vitamin.chat.MsgConst;
 import me.proartex.test.vitamin.chat.server.Server;
 
 import java.nio.channels.SelectionKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
+/**
+ * @since 1.7
+ */
 public class RegisterUserCommand implements Executable, Validatable {
 
     private final Server server;
@@ -38,7 +41,7 @@ public class RegisterUserCommand implements Executable, Validatable {
             return;
         }
 
-        userName   = new String(this.userName);
+        userName   = new String(this.userName, StandardCharsets.UTF_8);
         connection = server.getNotRegisteredClients().get(key);
 
         //new one case

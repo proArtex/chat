@@ -12,8 +12,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+/**
+ * @since 1.7
+ */
 public class Server extends Thread {
 
     public int messageHistoryLimit = 100;
@@ -119,7 +123,7 @@ public class Server extends Thread {
 
         try {
             while ((numRead = socketChannel.read((ByteBuffer) buffer.clear())) > 0) {
-                serializedCommand.append(new String(buffer.array(), 0, numRead));
+                serializedCommand.append(new String(buffer.array(), 0, numRead, StandardCharsets.UTF_8));
             }
         }
         catch (IOException e) {

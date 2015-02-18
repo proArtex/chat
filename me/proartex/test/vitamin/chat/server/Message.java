@@ -1,8 +1,12 @@
 package me.proartex.test.vitamin.chat.server;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * @since 1.7
+ */
 public class Message {
 
     private final byte[] msg;
@@ -19,6 +23,6 @@ public class Message {
                    .append("[")
                    .append(new SimpleDateFormat("HH:mm:ss").format(date))
                    .append("] ")
-                   .append(new String(msg)).toString();
+                   .append(new String(msg, StandardCharsets.UTF_8)).toString();
     }
 }
