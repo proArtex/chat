@@ -61,9 +61,6 @@ public class Client extends Thread {
                     break;
             }
         }
-        catch (UnknownHostException e) {
-            System.out.println(MsgConst.UNREACHABLE_HOST_PREFIX + host);
-        }
         catch (IOException e) {
             System.out.println(MsgConst.CONNECTION_CLOSED);
         }
@@ -89,6 +86,9 @@ public class Client extends Thread {
             in     = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             return true;
+        }
+        catch (UnknownHostException e) {
+            return false;
         }
         catch (IOException e) {
             if (++tries < maxTries)
