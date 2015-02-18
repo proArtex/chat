@@ -35,7 +35,7 @@ public class SendMessageCommand implements Executable, Validatable {
         Message message  = new Message(date, concatMessage(userName, this.message));
 
         for (Map.Entry<SelectionKey, Connection> client: server.getClients().entrySet()) {
-            client.getValue().getQueue().add(message.toString().getBytes());
+            client.getValue().getMessageQueue().add(message.toString().getBytes());
         }
 
         //add into history list

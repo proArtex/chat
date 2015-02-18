@@ -22,7 +22,7 @@ public class ShowCommandListCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        LinkedList<byte[]> clientQueue = server.getClients().get(key).getQueue();
+        LinkedList<byte[]> clientQueue = server.getClients().get(key).getMessageQueue();
 
         String[] commands = new String[] {
             "/exit - leave the chat",

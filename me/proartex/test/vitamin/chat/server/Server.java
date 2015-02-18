@@ -143,7 +143,7 @@ public class Server extends Thread {
     private void write(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
         Connection connection       = getClientGroup(key).get(key);
-        LinkedList<byte[]> queue    = connection.getQueue();
+        LinkedList<byte[]> queue    = connection.getMessageQueue();
 
         try {
             //write everything are in queue
@@ -175,7 +175,7 @@ public class Server extends Thread {
                 continue;
             }
 
-            if (pair.getValue().getQueue().size() > 0) {
+            if (pair.getValue().getMessageQueue().size() > 0) {
                 curKey.interestOps(SelectionKey.OP_WRITE);
             }
         }
@@ -219,7 +219,7 @@ public class Server extends Thread {
 
             //say it to everyone
             for (Map.Entry<SelectionKey, Connection> client: clients.entrySet()) {
-                client.getValue().getQueue().add(message.getBytes());
+                client.getValue().getMessageQueue().add(message.getBytes());
                 client.getKey().interestOps(SelectionKey.OP_WRITE);
             }
         }

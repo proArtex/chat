@@ -34,7 +34,7 @@ public class RegisterUserCommand implements Executable, Validatable {
             userName   = connection.getUserName();
             message    = MsgConst.ALREADY_REGISTERED_PREFIX + userName;
 
-            connection.getQueue().add(message.getBytes());
+            connection.getMessageQueue().add(message.getBytes());
             return;
         }
 
@@ -60,15 +60,15 @@ public class RegisterUserCommand implements Executable, Validatable {
             for (Map.Entry<SelectionKey, Connection> client: server.getClients().entrySet()) {
                 //accept msg to itself
                 if (client.getKey() == key) {
-                    client.getValue().getQueue().add(MsgConst.REGISTER_SUCCESS.getBytes());
+                    client.getValue().getMessageQueue().add(MsgConst.REGISTER_SUCCESS.getBytes());
                     continue;
                 }
 
-                client.getValue().getQueue().add(message.getBytes());
+                client.getValue().getMessageQueue().add(message.getBytes());
             }
         }
         else {
-            connection.getQueue().add(MsgConst.REGISTER_FAIL.getBytes());
+            connection.getMessageQueue().add(MsgConst.REGISTER_FAIL.getBytes());
         }
     }
 

@@ -25,7 +25,7 @@ public class ShowClientsNumCommand implements Executable, Validatable {
         int total           = server.getClients().size();
         String totalMessage = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
 
-        server.getClients().get(key).getQueue().add(totalMessage.getBytes());
+        server.getClients().get(key).getMessageQueue().add(totalMessage.getBytes());
     }
 
     @Override

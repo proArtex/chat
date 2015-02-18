@@ -23,7 +23,7 @@ public class ShowMessageHistoryCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        LinkedList<byte[]> clientQueue = server.getClients().get(key).getQueue();
+        LinkedList<byte[]> clientQueue = server.getClients().get(key).getMessageQueue();
 
         for (Message message : server.getMessageHistory()) {
             clientQueue.add(message.toString().getBytes());
