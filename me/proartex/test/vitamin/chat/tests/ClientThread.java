@@ -2,6 +2,7 @@ package me.proartex.test.vitamin.chat.tests;
 
 import me.proartex.test.vitamin.chat.client.Client;
 import me.proartex.test.vitamin.chat.client.Receiver;
+import me.proartex.test.vitamin.chat.exceptions.ClientException;
 
 import java.util.Date;
 
@@ -23,14 +24,9 @@ public class ClientThread extends Thread {
         long lifeTime = LoadTesting.randomInRange(100000, 100000);
 
         try {
-            if (!client.connect()) {
-                System.out.println("FAILED TO CONNECT");
-                return;
-            }
-
-            client.showMessageHistory();
-
-            new Receiver(client).start();
+            client.connectToServer();
+            client.showMessageHistoryToUser();
+            client.runIncomingMessageListener();
 
             client.sendMsg("/register User" + userNum);
 
@@ -41,6 +37,9 @@ public class ClientThread extends Thread {
         }
         catch (InterruptedException e) {
             e.printStackTrace();
+        }
+        catch (ClientException e) {
+            //NOP
         }
 
         client.sendMsg("/exit");
