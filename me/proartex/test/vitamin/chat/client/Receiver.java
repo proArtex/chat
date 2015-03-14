@@ -17,19 +17,23 @@ public class Receiver extends Thread {
 
     @Override
     public void run() {
-        String line;
-
         try {
-            while ((line = in.readLine()) != null && !MsgConst.BYE_BYE.equals(line)) {
-                System.out.println(line);
-            }
+            tryToReadAndPrintMessageFromServer();
         }
-        catch (Throwable t) {
-            t.printStackTrace();
+        catch (IOException e) {
+            e.printStackTrace();
         }
         finally {
             System.out.println(MsgConst.CONNECTION_CLOSED);
 //            System.exit(1);
+        }
+    }
+
+    private void tryToReadAndPrintMessageFromServer() throws IOException {
+        String line;
+
+        while ((line = in.readLine()) != null && !MsgConst.BYE_BYE.equals(line)) {
+            System.out.println(line);
         }
     }
 }
