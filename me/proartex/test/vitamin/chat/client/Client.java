@@ -1,9 +1,8 @@
 package me.proartex.test.vitamin.chat.client;
 
-import me.proartex.test.vitamin.chat.commands.Executable;
 import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.Protocol;
-import me.proartex.test.vitamin.chat.exceptions.ClientException;
+import me.proartex.test.vitamin.chat.protocol.Protocol;
+import me.proartex.test.vitamin.chat.client.commands.Serializable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,13 +18,18 @@ public class Client extends Thread {
     private int port           = 9993;
     private int maxTries       = 10;
     private int tries          = 0;
+    private Receiver receiver;
     private Socket socket;
     private PrintWriter out;
     private BufferedReader stdin;
     private BufferedReader in;
 
+    public Client(Receiver receiver) {
+        this.receiver = receiver;
+    }
+
     public static void main(String[] args) {
-        new Client().start();
+        new Client(new Receiver()).start();
     }
 
     @Override
@@ -38,6 +42,9 @@ public class Client extends Thread {
             readAndSendUserMessage();
         }
         catch (ClientException e) {
+            //NOP
+        }
+        finally {
             closeInvolvedResources();
         }
     }
@@ -57,11 +64,12 @@ public class Client extends Thread {
     }
 
     public void showMessageHistoryToUser() {
-        sendMsg("/history");
+        sendMessage("/history");
     }
 
     public void runIncomingMessageListener() {
-        new Receiver(this).start();
+        receiver.setIn(in);
+        receiver.start();
     }
 
     private void readAndSendUserMessage() throws ClientException {
@@ -76,10 +84,14 @@ public class Client extends Thread {
 
     private void closeInvolvedResources() {
         try {
-            in.close();
-            out.close();
-            stdin.close();
-            socket.close();
+            if (in != null)
+                in.close();
+            if (out != null)
+                out.close();
+            if (stdin != null)
+                stdin.close();
+            if (socket != null)
+                socket.close();
         } catch (Throwable t) {
             //NOP
         }
@@ -127,7 +139,7 @@ public class Client extends Thread {
                 System.out.println(response);
 
             String userName = readUntilUsernameIsValid();
-            sendMsg("/register " + userName);
+            sendMessage("/register " + userName);
         }
         while (!MsgConst.REGISTER_SUCCESS.equals(response = in.readLine()) && response != null);
 
@@ -142,7 +154,7 @@ public class Client extends Thread {
         String myMessage;
 
         while ((myMessage = stdin.readLine()) != null) {
-            sendMsg(myMessage);
+            sendMessage(myMessage);
 
             //костылище для теста: в отсутствие System.exit() - уходим так
             if ("/exit".equals(myMessage))
@@ -150,21 +162,10 @@ public class Client extends Thread {
         }
     }
 
-    public void sendMsg(String message) {
-        String serializedCommand;
-        Executable command = CommandFactory.getCommand(message);
-
-        if (command == null) {
-            System.out.println(MsgConst.UNKNOWN_COMMAND_PREFIX + message);
-            return;
-        }
-
-        if ( (serializedCommand = Protocol.serialize(command)) == null ) {
-            System.out.println(MsgConst.SEND_FAIL_PREFIX + message);
-            return;
-        }
-
-        out.println(serializedCommand);
+    public void sendMessage(String context) {
+        Serializable command = ClientCommandFactory.getInstanceFor(context);
+        String serializedCommand = Protocol.serialize(command);
+        send(serializedCommand);
     }
 
     private String readUntilUsernameIsValid() throws IOException {
@@ -178,6 +179,10 @@ public class Client extends Thread {
 
     private static boolean isValidUserName(String userName) {
         return userName.matches("[A-z0-9_]+");
+    }
+
+    private void send(String serializedCommand) {
+        out.println(serializedCommand);
     }
 
     public BufferedReader getIn() {

@@ -7,13 +7,7 @@ import java.io.IOException;
 
 public class Receiver extends Thread {
 
-    private Client client;
     private BufferedReader in;
-
-    public Receiver(Client client) {
-        this.client = client;
-        this.in = client.getIn();
-    }
 
     @Override
     public void run() {
@@ -27,6 +21,10 @@ public class Receiver extends Thread {
             System.out.println(MsgConst.CONNECTION_CLOSED);
 //            System.exit(1);
         }
+    }
+
+    void setIn(BufferedReader in) {
+        this.in = in;
     }
 
     private void tryToReadAndPrintMessageFromServer() throws IOException {

@@ -4,18 +4,18 @@ import java.util.LinkedList;
 
 public class Connection {
 
-    private String userName;
-    private LinkedList<byte[]> messageQueue = new LinkedList<>();
+    private String username;
+    private LinkedList<String> messageQueue = new LinkedList<>();
 
-    public String getUserName() {
-        return userName;
+    public String getUsername() {
+        return username;
     }
 
-    public LinkedList<byte[]> getMessageQueue() {
+    public LinkedList<String> getMessageQueue() {
         return messageQueue;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.MsgConst;
 import me.proartex.test.vitamin.chat.server.Server;
@@ -7,15 +7,7 @@ import java.nio.channels.SelectionKey;
 
 public class ShowClientsNumCommand implements Executable, Validatable {
 
-    private final Server server;
-
-    public ShowClientsNumCommand() {
-        this.server = null;
-    }
-
-    public ShowClientsNumCommand(Server server) {
-        this.server = server;
-    }
+    private Server server;
 
     @Override
     public void execute(SelectionKey key) {
@@ -25,10 +17,19 @@ public class ShowClientsNumCommand implements Executable, Validatable {
         int total           = server.getClients().size();
         String totalMessage = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
 
-        server.getClients().get(key).getMessageQueue().add(totalMessage.getBytes());
+        server.getClients().get(key).getMessageQueue().add(totalMessage);
     }
 
     @Override
+    public void setServer(Server server) {
+        this.server = server;
+    }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
     public boolean isValidUser(SelectionKey key) {
         return server.getClients().containsKey(key);
     }

@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.server.Server;
 
@@ -7,34 +7,37 @@ import java.util.LinkedList;
 
 public class ShowCommandListCommand implements Executable, Validatable {
 
-    private final Server server;
-
-    public ShowCommandListCommand() {
-        this.server = null;
-    }
-
-    public ShowCommandListCommand(Server server) {
-        this.server = server;
-    }
+    private Server server;
 
     @Override
     public void execute(SelectionKey key) {
+
+        System.out.println("123");
         if (!isValidUser(key))
             return;
 
-        LinkedList<byte[]> clientQueue = server.getClients().get(key).getMessageQueue();
+        LinkedList<String> clientQueue = server.getClients().get(key).getMessageQueue();
 
         String[] commands = new String[] {
-            "/exit - leave the chat",
-            "/total - show number of users in chat",
+                "/exit - leave the chat",
+                "/total - show number of users in chat",
         };
 
         for (String command : commands) {
-            clientQueue.add(command.getBytes());
+            clientQueue.add(command);
         }
     }
 
     @Override
+    public void setServer(Server server) {
+        this.server = server;
+    }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
     public boolean isValidUser(SelectionKey key) {
         return server.getClients().containsKey(key);
     }

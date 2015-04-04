@@ -1,8 +1,7 @@
-package me.proartex.test.vitamin.chat.tests;
+package me.proartex.test.vitamin.chat.tests.load;
 
 import me.proartex.test.vitamin.chat.client.Client;
-import me.proartex.test.vitamin.chat.client.Receiver;
-import me.proartex.test.vitamin.chat.exceptions.ClientException;
+import me.proartex.test.vitamin.chat.client.ClientException;
 
 import java.util.Date;
 
@@ -28,12 +27,14 @@ public class ClientThread extends Thread {
             client.showMessageHistoryToUser();
             client.runIncomingMessageListener();
 
-            client.sendMsg("/register User" + userNum);
+            client.sendMessage("/register User" + userNum);
 
             while (new Date().getTime() < startTime + lifeTime) {
                 Thread.sleep(LoadTesting.randomInRange(1000, 5000));
-                client.sendMsg("message" + String.valueOf(++messageNum)); //TODO: use commands also
+                client.sendMessage("message" + String.valueOf(++messageNum)); //TODO: use commands also
             }
+
+            client.sendMessage("/exit");
         }
         catch (InterruptedException e) {
             e.printStackTrace();
@@ -41,7 +42,5 @@ public class ClientThread extends Thread {
         catch (ClientException e) {
             //NOP
         }
-
-        client.sendMsg("/exit");
     }
 }

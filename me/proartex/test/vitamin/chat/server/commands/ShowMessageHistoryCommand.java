@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.server.Message;
 import me.proartex.test.vitamin.chat.server.Server;
@@ -8,29 +8,30 @@ import java.util.LinkedList;
 
 public class ShowMessageHistoryCommand implements Executable, Validatable {
 
-    private final Server server;
-
-    public ShowMessageHistoryCommand() {
-        this.server = null;
-    }
-
-    public ShowMessageHistoryCommand(Server server) {
-        this.server = server;
-    }
+    private Server server;
 
     @Override
     public void execute(SelectionKey key) {
         if (!isValidUser(key))
             return;
 
-        LinkedList<byte[]> clientQueue = server.getClients().get(key).getMessageQueue();
+        LinkedList<String> clientQueue = server.getClients().get(key).getMessageQueue();
 
         for (Message message : server.getMessageHistory()) {
-            clientQueue.add(message.toString().getBytes());
+            clientQueue.add(message.toString());
         }
     }
 
     @Override
+    public void setServer(Server server) {
+        this.server = server;
+    }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
     public boolean isValidUser(SelectionKey key) {
         return server.getClients().containsKey(key);
     }

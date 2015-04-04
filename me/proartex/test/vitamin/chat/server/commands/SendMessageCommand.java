@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.server.Connection;
 import me.proartex.test.vitamin.chat.server.Message;
@@ -11,18 +11,8 @@ import java.util.Map;
 
 public class SendMessageCommand implements Executable, Validatable {
 
-    private final Server server;
-    private byte[] message;
-
-    public SendMessageCommand(byte[] message) {
-        this.server = null;
-        this.message = message;
-    }
-
-    public SendMessageCommand(Server server, byte[] message) {
-        this.server = server;
-        this.message = message;
-    }
+    private Server server;
+    private String message;
 
     @Override
     public void execute(SelectionKey key) {
@@ -31,11 +21,11 @@ public class SendMessageCommand implements Executable, Validatable {
 
         //msg with server handler time
         Date date        = new Date();
-        String userName  = server.getClients().get(key).getUserName();
-        Message message  = new Message(date, concatMessage(userName, this.message));
+        String userName  = server.getClients().get(key).getUsername();
+        Message message  = new Message(date, concatMessage(userName, this.message.getBytes()));
 
         for (Map.Entry<SelectionKey, Connection> client: server.getClients().entrySet()) {
-            client.getValue().getMessageQueue().add(message.toString().getBytes());
+            client.getValue().getMessageQueue().add(message.toString());
         }
 
         //add into history list
@@ -48,6 +38,15 @@ public class SendMessageCommand implements Executable, Validatable {
     }
 
     @Override
+    public void setServer(Server server) {
+        this.server = server;
+    }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
     public boolean isValidUser(SelectionKey key) {
         return server.getClients().containsKey(key);
     }

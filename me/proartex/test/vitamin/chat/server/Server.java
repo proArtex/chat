@@ -1,30 +1,27 @@
 package me.proartex.test.vitamin.chat.server;
 
 import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.Protocol;
-import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.protocol.Protocol;
+import me.proartex.test.vitamin.chat.server.commands.Executable;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
  * @since 1.7
  */
-public class Server extends Thread {
+public class Server implements Runnable {
 
-    public int messageHistoryLimit = 100;
-
+    public static String DEFAULT_HOST = "localhost";
+    public static int DEFAULT_PORT    = 9993;
+    public int messageHistoryLimit    = 100;
+    private volatile boolean isInterrupted;
     private long sessionId;
-    private InetAddress hostAddress;
-    private int port;
+    private InetSocketAddress socketAddress;
     private ServerSocketChannel serverChannel;
     private Selector selector;
     private ByteBuffer buffer                                      = ByteBuffer.allocate(512);
@@ -32,64 +29,67 @@ public class Server extends Thread {
     private HashMap<SelectionKey, Connection> notRegisteredClients = new HashMap<>();
     private LinkedList<Message> messageHistory                     = new LinkedList<>();
 
-    public Server(InetAddress hostAddress, int port) throws IOException {
-        this.hostAddress = hostAddress;
-        this.port = port;
-        this.selector = this.initSelector();
+    public Server() {
+        this(DEFAULT_HOST, DEFAULT_PORT);
+    }
+
+    public Server(String host, int port) throws ServerException {
+        try {
+            socketAddress = new InetSocketAddress(host, port);
+            selector = Selector.open();
+            serverChannel = ServerSocketChannel.open();
+            configureChannel();
+        }
+        catch (IOException e) {
+            throw new ServerException("Server initialization failed: " + e.getMessage());
+        }
+        finally {
+            //TODO: close resources
+        }
     }
 
     public static void main(String[] args) {
-        try {
-            new Server(null, 9993).start();
-            System.out.println("Start server");
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        Server server = new Server();
+        server.start();
     }
 
-    private Selector initSelector() throws IOException {
-        Selector selector = Selector.open();
+    public void start() {
+        System.out.println("Starting server");
+        new Thread(this).start();
+    }
 
-        serverChannel = ServerSocketChannel.open();
-        serverChannel.configureBlocking(false);
-        serverChannel.socket().bind(new InetSocketAddress(hostAddress, port));
-        serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-
-        return selector;
+    public void stop() {
+        System.out.println("Stopping server");
+        isInterrupted = true;
     }
 
     @Override
     public void run() {
-        while (true) {
-
-            // changing interestOps to write if need
-            switchOpsToWrite(notRegisteredClients);
-            switchOpsToWrite(clients);
+        while (!isInterrupted) {
+            switchOpsToWriteIfNecessary(notRegisteredClients);
+            switchOpsToWriteIfNecessary(clients);
 
             try {
-                selector.select();
-
-                for (SelectionKey key : selector.selectedKeys()) {
+                Set<SelectionKey> keys = listenForNewActivitiesWithTimeout(1000);
+                for (SelectionKey key : keys) {
 
                     if (!key.isValid())
                         continue;
 
-                    if(key.isAcceptable()) {
-                        accept();
+                    if (key.isAcceptable()) {
+                        acceptConnection();
                     }
-                    else if(key.isReadable()) {
-                        read(key);
+                    else if (key.isReadable()) {
+                        String serializedCommands = readFromChannelOf(key);
+                        deserializeAndExecute(serializedCommands, key);
                     }
-                    else if(key.isWritable()) {
+                    else if (key.isWritable()) {
                         write(key);
                     }
                 }
-
-                selector.selectedKeys().clear();
             }
             catch (IOException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         }
     }
@@ -105,7 +105,21 @@ public class Server extends Thread {
         messageHistory.clear();
     }
 
-    private void accept() throws IOException {
+    private void configureChannel() throws IOException {
+        serverChannel.configureBlocking(false);
+        serverChannel.socket().bind(socketAddress);
+        serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+    }
+
+    private Set<SelectionKey> listenForNewActivitiesWithTimeout(long timeout) throws IOException {
+        Set<SelectionKey> keys = selector.selectedKeys();
+        keys.clear();
+        selector.select(timeout);
+
+        return keys;
+    }
+
+    private void acceptConnection() throws IOException {
         SocketChannel socketChannel = serverChannel.accept();
         socketChannel.configureBlocking(false);
 
@@ -115,58 +129,52 @@ public class Server extends Thread {
         notRegisteredClients.put(key, new Connection());
     }
 
-    private void read(SelectionKey key) {
+    private String readFromChannelOf(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
         int numRead;
-        StringBuilder serializedCommand = new StringBuilder();
+        StringBuilder context = new StringBuilder();
 
         try {
             while ((numRead = socketChannel.read((ByteBuffer) buffer.clear())) > 0) {
-                serializedCommand.append(new String(buffer.array(), 0, numRead, StandardCharsets.UTF_8));
+                context.append(new String(buffer.array(), 0, numRead, StandardCharsets.UTF_8));
             }
         }
         catch (IOException e) {
-//            e.printStackTrace();
             closeConnection(key, null);
-            return;
+            throw e;
         }
 
-        if (numRead == -1) {
-            closeConnection(key, null);
-            return;
-        }
+//        if (numRead == -1) {
+//            closeConnection(key, null);
+//        }
 
-        // Process data
-        ArrayList<Executable> commands = Protocol.deserialize(this, serializedCommand.toString());
-        for (Executable command : commands) {
-            command.execute(key);
-        }
+        return context.toString();
     }
 
-    private void write(SelectionKey key) {
+    private void write(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
         Connection connection       = getClientGroup(key).get(key);
-        LinkedList<byte[]> queue    = connection.getMessageQueue();
+        LinkedList<String> queue    = connection.getMessageQueue();
 
         try {
-            //write everything are in queue
-            for (byte[] message : queue) {
-                int send = socketChannel.write(ByteBuffer.wrap(addLineSeparator(message)));
+            Iterator<String> iterator = queue.iterator();
+            while (iterator.hasNext()) {
+                String message = addLineSeparator(iterator.next());
+                ByteBuffer bufferedMessage = ByteBuffer.wrap(message.getBytes());
+                socketChannel.write(bufferedMessage);
+                iterator.remove();
             }
         }
         catch (IOException e) {
-//            e.printStackTrace();
             closeConnection(key, null);
-            return;
+            throw e;
         }
-
-        queue.clear();
 
         key.interestOps(SelectionKey.OP_READ);
     }
 
-    private void switchOpsToWrite(HashMap<SelectionKey, Connection> clientGroup) {
+    private void switchOpsToWriteIfNecessary(HashMap<SelectionKey, Connection> clientGroup) {
         Iterator<Map.Entry<SelectionKey, Connection>> iterator = clientGroup.entrySet().iterator();
 
         while (iterator.hasNext()) {
@@ -185,6 +193,19 @@ public class Server extends Thread {
         }
     }
 
+    private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
+        ArrayList<Executable> commands = Protocol.deserialize(serializedCommands);
+//        System.out.println("found commands: "+ commands);
+        for (Executable command : commands) {
+            command.setServer(this);
+            command.execute(key);
+        }
+    }
+
+
+
+
+
     public void closeConnection(SelectionKey key, Iterator<Map.Entry<SelectionKey, Connection>> iterator) {
         closeConnection(key, getClientGroup(key), iterator);
     }
@@ -194,12 +215,12 @@ public class Server extends Thread {
                                 Iterator<Map.Entry<SelectionKey, Connection>> iterator) {
 
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        String message              = clientGroup.get(key).getUserName() + MsgConst.USER_LEFT_POSTFIX;
+        String message              = clientGroup.get(key).getUsername() + MsgConst.USER_LEFT_POSTFIX;
         boolean registeredUser      = clientGroup == clients;
 
         //notify server
         if (registeredUser)
-            System.out.println(clientGroup.get(key).getUserName() + " sign out. Total: " + (clientGroup.size()-1));
+            System.out.println(clientGroup.get(key).getUsername() + " sign out. Total: " + (clientGroup.size()-1));
 
         //ConcurrentModificationException safe remove
         if (iterator == null)
@@ -223,7 +244,7 @@ public class Server extends Thread {
 
             //say it to everyone
             for (Map.Entry<SelectionKey, Connection> client: clients.entrySet()) {
-                client.getValue().getMessageQueue().add(message.getBytes());
+                client.getValue().getMessageQueue().add(message);
                 client.getKey().interestOps(SelectionKey.OP_WRITE);
             }
         }
@@ -232,19 +253,15 @@ public class Server extends Thread {
         }
     }
 
-    private byte[] addLineSeparator(byte[] message) {
-        byte[] separatedMessage = new byte[message.length + 1];
-        System.arraycopy(message, 0, separatedMessage, 0, message.length);
-        separatedMessage[separatedMessage.length - 1] = Character.LINE_SEPARATOR;
-
-        return separatedMessage;
+    private String addLineSeparator(String message) {
+        return message + System.getProperty("line.separator");
     }
 
     public boolean isFreeUserName(String userName) {
         boolean isFree = true;
 
         for (Map.Entry<SelectionKey, Connection> client: clients.entrySet()) {
-            if (client.getValue().getUserName().equals(userName)) {
+            if (client.getValue().getUsername().equals(userName)) {
                 isFree = false;
                 break;
             }
