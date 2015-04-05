@@ -14,10 +14,10 @@ public class ShowClientsNumCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        int total           = server.getClients().count();
+        int total           = server.getUsers().count();
         String totalMessage = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
 
-        server.getClients().getUsersMessageQueue(key).add(totalMessage);
+        server.getUsers().getUsersMessageQueue(key).add(totalMessage);
     }
 
     @Override
@@ -31,6 +31,6 @@ public class ShowClientsNumCommand implements Executable, Validatable {
     }
 
     public boolean isValidUser(SelectionKey key) {
-        return server.getClients().containsUserWith(key);
+        return server.getUsers().containsUserWith(key);
     }
 }

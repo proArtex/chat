@@ -14,11 +14,6 @@ public class ExitCommand implements Executable, Validatable {
             return;
 
         server.cancelKey(key);
-//        server.closeConnection(key, null);
-    }
-
-    public boolean isValidUser(SelectionKey key) {
-        return server.getClients().containsUserWith(key);
     }
 
     @Override
@@ -28,6 +23,11 @@ public class ExitCommand implements Executable, Validatable {
 
     @Override
     public boolean isValid() {
+//        return server.containsUserWith(key);
         return true;
+    }
+
+    public boolean isValidUser(SelectionKey key) {
+        return server.containsUserWith(key);
     }
 }

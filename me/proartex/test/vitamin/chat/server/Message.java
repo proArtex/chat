@@ -1,6 +1,5 @@
 package me.proartex.test.vitamin.chat.server;
 
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -9,20 +8,17 @@ import java.util.Date;
  */
 public class Message {
 
-    private final byte[] msg;
+    private final String message;
     private final Date date;
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
-    public Message(Date date, byte[] msg) {
-        this.msg = msg;
+    public Message(Date date, String message) {
+        this.message = message;
         this.date = date;
     }
 
     @Override
     public String toString() {
-        return new StringBuilder()
-                   .append("[")
-                   .append(new SimpleDateFormat("HH:mm:ss").format(date))
-                   .append("] ")
-                   .append(new String(msg, StandardCharsets.UTF_8)).toString();
+        return "[" + dateFormat.format(date) + "] " + message;
     }
 }

@@ -10,18 +10,18 @@ import java.util.Map;
 
 public class UserGroup {
 
-    private Map<SelectionKey, Connection> users;
+    private Map<SelectionKey, User> users;
 
     public UserGroup() {
         users = new HashMap<>();
     }
 
     public void add(SelectionKey key) {
-        add(key, new Connection());
+        add(key, new User());
     }
 
-    public void add(SelectionKey key, Connection connection) {
-        users.put(key, connection);
+    public void add(SelectionKey key, User user) {
+        users.put(key, user);
     }
 
     public void dismiss(SelectionKey key) {
@@ -33,7 +33,7 @@ public class UserGroup {
     }
 
     public void notifyAllUsers(String message) {
-        for (Map.Entry<SelectionKey, Connection> client: users.entrySet()) {
+        for (Map.Entry<SelectionKey, User> client: users.entrySet()) {
             client.getValue().getMessageQueue().add(message);
         }
     }
@@ -43,7 +43,7 @@ public class UserGroup {
     }
 
     public boolean containsUserWith(String username) {
-        for (Map.Entry<SelectionKey, Connection> client: users.entrySet()) {
+        for (Map.Entry<SelectionKey, User> client: users.entrySet()) {
             if (client.getValue().getUsername().equals(username)) {
                 return true;
             }
@@ -57,10 +57,10 @@ public class UserGroup {
     }
 
     public void removeUsersWithCanceledConnection() {
-        Iterator<Map.Entry<SelectionKey, Connection>> iterator = users.entrySet().iterator();
+        Iterator<Map.Entry<SelectionKey, User>> iterator = users.entrySet().iterator();
 
         while (iterator.hasNext()) {
-            Map.Entry<SelectionKey, Connection> pair = iterator.next();
+            Map.Entry<SelectionKey, User> pair = iterator.next();
             SelectionKey key = pair.getKey();
 
             if (!key.isValid()) {
@@ -78,7 +78,7 @@ public class UserGroup {
     }
 
     //TMP
-    public Map<SelectionKey, Connection> getUsers() {
+    public Map<SelectionKey, User> getUsers() {
         return users;
     }
 
@@ -86,7 +86,7 @@ public class UserGroup {
         return users.get(key).getMessageQueue();
     }
 
-    public Connection getConnectionWith(SelectionKey key) {
+    public User getConnectionWith(SelectionKey key) {
         return users.get(key);
     }
 }

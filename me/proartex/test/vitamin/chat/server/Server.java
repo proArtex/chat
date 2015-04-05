@@ -17,17 +17,14 @@ public class Server implements Runnable {
 
     public static String DEFAULT_HOST = "localhost";
     public static int DEFAULT_PORT    = 9993;
-    public int messageHistoryLimit    = 100;
-    private volatile boolean isInterrupted;
-//    private long sessionId;
     private Session session;
     private InetSocketAddress socketAddress;
     private ServerSocketChannel serverChannel;
     private Selector selector;
     private ByteBuffer buffer              = ByteBuffer.allocate(512);
-    private UserGroup clients              = new UserGroup();
+    private UserGroup users = new UserGroup();
     private UserGroup notRegisteredClients = new UserGroup();
-    private List<Message> messageHistory   = new LinkedList<>();
+    private volatile boolean isInterrupted;
 
     public Server() {
         this(DEFAULT_HOST, DEFAULT_PORT);
@@ -86,7 +83,7 @@ public class Server implements Runnable {
                         deserializeAndExecute(serializedCommands, key);
                     }
                     else if (key.isWritable()) {
-                        write(key);
+                        writeToChannelOf(key);
                     }
                 }
             }
@@ -94,10 +91,10 @@ public class Server implements Runnable {
 //                e.printStackTrace();
             }
 
-            clients.removeUsersWithCanceledConnection();
+            users.removeUsersWithCanceledConnection();
             notRegisteredClients.removeUsersWithCanceledConnection();
             switchOps(notRegisteredClients);
-            switchOps(clients);
+            switchOps(users);
             processSession();
         }
     }
@@ -152,7 +149,7 @@ public class Server implements Runnable {
         return context.toString();
     }
 
-    private void write(SelectionKey key) throws IOException {
+    private void writeToChannelOf(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 //        Connection connection       = getClientGroup(key).get(key);
 //        LinkedList<String> queue    = connection.getMessageQueue();
@@ -176,7 +173,7 @@ public class Server implements Runnable {
     }
 
     private void switchOps(UserGroup clientGroup) {
-        for (Map.Entry<SelectionKey, Connection> pair: clientGroup.getUsers().entrySet()) {
+        for (Map.Entry<SelectionKey, User> pair: clientGroup.getUsers().entrySet()) {
             SelectionKey key = pair.getKey();
             if (pair.getValue().getMessageQueue().size() > 0) {
                 key.interestOps(SelectionKey.OP_WRITE);
@@ -193,7 +190,6 @@ public class Server implements Runnable {
         }
         else if (timeToCloseSession()) {
             session.close();
-            messageHistory.clear();
         }
     }
 
@@ -218,11 +214,11 @@ public class Server implements Runnable {
     }
 
     private boolean timeToOpenSession() {
-        return clients.count() > 0 && !session.isOpened();
+        return users.count() > 0 && !session.isOpened();
     }
 
     private boolean timeToCloseSession() {
-        return clients.count() == 0 && session.isOpened();
+        return users.count() == 0 && session.isOpened();
     }
 
     private String addLineSeparator(String message) {
@@ -230,22 +226,31 @@ public class Server implements Runnable {
     }
 
     public boolean isFreeUserName(String username) {
-        return !clients.containsUserWith(username);
+        return !users.containsUserWith(username);
     }
 
     public UserGroup getClientGroup(SelectionKey key) {
-        return clients.containsUserWith(key) ? clients : notRegisteredClients;
+        return users.containsUserWith(key) ? users : notRegisteredClients;
     }
 
     public UserGroup getNotRegisteredClients() {
         return notRegisteredClients;
     }
 
-    public UserGroup getClients() {
-        return clients;
+    public UserGroup getUsers() {
+        return users;
     }
 
     public List<Message> getMessageHistory() {
-        return messageHistory;
+        return session.getMessageHistory();
+    }
+
+    public void addMessageToHistory(Message message) {
+        session.noteMessage(message);
+    }
+
+    //FROM COMMANDS
+    public boolean containsUserWith(SelectionKey key) {
+        return users.containsUserWith(key);
     }
 }

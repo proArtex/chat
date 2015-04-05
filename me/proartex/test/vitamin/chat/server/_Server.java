@@ -291,7 +291,7 @@
 //        return notRegisteredClients;
 //    }
 //
-//    public HashMap<SelectionKey, Connection> getClients() {
+//    public HashMap<SelectionKey, Connection> getUsers() {
 //        return clients;
 //    }
 //
