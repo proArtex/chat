@@ -34,9 +34,9 @@ public class RegisterUserCommand implements Executable, Validatable {
             message = this.username + MsgConst.USER_SIGN_POSTFIX;
             connection.setUsername(this.username);
 
-            // open session
-            if (server.getClients().count() == 0)
-                server.openSession();
+//            // open session
+//            if (server.getClients().count() == 0)
+//                server.openSession();
 
             server.getNotRegisteredClients().dismiss(key);
             server.getClients().add(key, connection);

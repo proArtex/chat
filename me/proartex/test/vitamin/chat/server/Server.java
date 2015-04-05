@@ -19,7 +19,8 @@ public class Server implements Runnable {
     public static int DEFAULT_PORT    = 9993;
     public int messageHistoryLimit    = 100;
     private volatile boolean isInterrupted;
-    private long sessionId;
+//    private long sessionId;
+    private Session session;
     private InetSocketAddress socketAddress;
     private ServerSocketChannel serverChannel;
     private Selector selector;
@@ -34,6 +35,7 @@ public class Server implements Runnable {
 
     public Server(String host, int port) throws ServerException {
         try {
+            session = new Session();
             socketAddress = new InetSocketAddress(host, port);
             selector = Selector.open();
             serverChannel = ServerSocketChannel.open();
@@ -94,26 +96,10 @@ public class Server implements Runnable {
 
             clients.removeUsersWithCanceledConnection();
             notRegisteredClients.removeUsersWithCanceledConnection();
-
-            //close session
-            if (clients.count() == 0) {
-                closeSession();
-            }
-
             switchOps(notRegisteredClients);
             switchOps(clients);
+            processSession();
         }
-    }
-
-    public void openSession() {
-        sessionId = new Date().getTime();
-        System.out.println("Session " + sessionId + " has been opened");
-    }
-
-    public void closeSession() {
-        System.out.println("Session " + sessionId + " has been closed");
-        sessionId = 0;
-        messageHistory.clear();
     }
 
     private void configureChannel() throws IOException {
@@ -199,8 +185,16 @@ public class Server implements Runnable {
                 key.interestOps(SelectionKey.OP_READ);
             }
         }
+    }
 
-
+    private void processSession() {
+        if (timeToOpenSession()) {
+            session.open();
+        }
+        else if (timeToCloseSession()) {
+            session.close();
+            messageHistory.clear();
+        }
     }
 
     private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
@@ -221,6 +215,14 @@ public class Server implements Runnable {
         catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean timeToOpenSession() {
+        return clients.count() > 0 && !session.isOpened();
+    }
+
+    private boolean timeToCloseSession() {
+        return clients.count() == 0 && session.isOpened();
     }
 
     private String addLineSeparator(String message) {
