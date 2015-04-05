@@ -6,7 +6,7 @@ import me.proartex.test.vitamin.chat.server.Server;
 
 import java.nio.channels.SelectionKey;
 import java.util.Date;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class SendMessageCommand implements Executable, Validatable {
@@ -21,15 +21,15 @@ public class SendMessageCommand implements Executable, Validatable {
 
         //msg with server handler time
         Date date        = new Date();
-        String userName  = server.getClients().get(key).getUsername();
+        String userName  = server.getClients().getNameOfUserWith(key);
         Message message  = new Message(date, concatMessage(userName, this.message.getBytes()));
 
-        for (Map.Entry<SelectionKey, Connection> client: server.getClients().entrySet()) {
+        for (Map.Entry<SelectionKey, Connection> client: server.getClients().getUsers().entrySet()) {
             client.getValue().getMessageQueue().add(message.toString());
         }
 
         //add into history list
-        LinkedList<Message> history = server.getMessageHistory();
+        List<Message> history = server.getMessageHistory();
 
         if (history.size() == server.messageHistoryLimit)
             history.remove(0);
@@ -48,7 +48,7 @@ public class SendMessageCommand implements Executable, Validatable {
     }
 
     public boolean isValidUser(SelectionKey key) {
-        return server.getClients().containsKey(key);
+        return server.getClients().containsUserWith(key);
     }
 
     private byte[] concatMessage(String userName, byte[] message) {

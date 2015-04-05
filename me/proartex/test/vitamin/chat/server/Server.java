@@ -1,6 +1,5 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.MsgConst;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 import me.proartex.test.vitamin.chat.server.commands.Executable;
 
@@ -24,10 +23,10 @@ public class Server implements Runnable {
     private InetSocketAddress socketAddress;
     private ServerSocketChannel serverChannel;
     private Selector selector;
-    private ByteBuffer buffer                                      = ByteBuffer.allocate(512);
-    private HashMap<SelectionKey, Connection> clients              = new HashMap<>();
-    private HashMap<SelectionKey, Connection> notRegisteredClients = new HashMap<>();
-    private LinkedList<Message> messageHistory                     = new LinkedList<>();
+    private ByteBuffer buffer              = ByteBuffer.allocate(512);
+    private UserGroup clients              = new UserGroup();
+    private UserGroup notRegisteredClients = new UserGroup();
+    private List<Message> messageHistory   = new LinkedList<>();
 
     public Server() {
         this(DEFAULT_HOST, DEFAULT_PORT);
@@ -66,15 +65,16 @@ public class Server implements Runnable {
     @Override
     public void run() {
         while (!isInterrupted) {
-            switchOpsToWriteIfNecessary(notRegisteredClients);
-            switchOpsToWriteIfNecessary(clients);
+            System.out.println("new iteration");
 
             try {
                 Set<SelectionKey> keys = listenForNewActivitiesWithTimeout(1000);
                 for (SelectionKey key : keys) {
 
-                    if (!key.isValid())
+                    if (!key.isValid()) {
+                        System.out.println("INVALID 1");
                         continue;
+                    }
 
                     if (key.isAcceptable()) {
                         acceptConnection();
@@ -91,6 +91,17 @@ public class Server implements Runnable {
             catch (IOException e) {
 //                e.printStackTrace();
             }
+
+            clients.removeUsersWithCanceledConnection();
+            notRegisteredClients.removeUsersWithCanceledConnection();
+
+            //close session
+            if (clients.count() == 0) {
+                closeSession();
+            }
+
+            switchOps(notRegisteredClients);
+            switchOps(clients);
         }
     }
 
@@ -114,7 +125,8 @@ public class Server implements Runnable {
     private Set<SelectionKey> listenForNewActivitiesWithTimeout(long timeout) throws IOException {
         Set<SelectionKey> keys = selector.selectedKeys();
         keys.clear();
-        selector.select(timeout);
+        selector.select();
+//        selector.select(timeout);
 
         return keys;
     }
@@ -126,7 +138,8 @@ public class Server implements Runnable {
         //register channel to read
         SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ);
 
-        notRegisteredClients.put(key, new Connection());
+//        notRegisteredClients.put(key, new Connection());
+        notRegisteredClients.add(key);
     }
 
     private String readFromChannelOf(SelectionKey key) throws IOException {
@@ -141,24 +154,27 @@ public class Server implements Runnable {
             }
         }
         catch (IOException e) {
-            closeConnection(key, null);
+            System.out.println("INVALID ON READ");
+            cancelKey(key);
             throw e;
         }
 
-//        if (numRead == -1) {
-//            closeConnection(key, null);
-//        }
+        if (numRead == -1) {
+            System.out.println("-1 READ INVALID!!!");
+        }
 
         return context.toString();
     }
 
     private void write(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        Connection connection       = getClientGroup(key).get(key);
-        LinkedList<String> queue    = connection.getMessageQueue();
+//        Connection connection       = getClientGroup(key).get(key);
+//        LinkedList<String> queue    = connection.getMessageQueue();
+
+        List<String> messageQueue = getClientGroup(key).getUsersMessageQueue(key);
 
         try {
-            Iterator<String> iterator = queue.iterator();
+            Iterator<String> iterator = messageQueue.iterator();
             while (iterator.hasNext()) {
                 String message = addLineSeparator(iterator.next());
                 ByteBuffer bufferedMessage = ByteBuffer.wrap(message.getBytes());
@@ -167,30 +183,24 @@ public class Server implements Runnable {
             }
         }
         catch (IOException e) {
-            closeConnection(key, null);
+            System.out.println("INVALID ON WRITE");
+            cancelKey(key);
             throw e;
         }
-
-        key.interestOps(SelectionKey.OP_READ);
     }
 
-    private void switchOpsToWriteIfNecessary(HashMap<SelectionKey, Connection> clientGroup) {
-        Iterator<Map.Entry<SelectionKey, Connection>> iterator = clientGroup.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<SelectionKey, Connection> pair = iterator.next();
-            SelectionKey curKey = pair.getKey();
-
-            //seems client left
-            if (!curKey.isValid()) {
-                closeConnection(curKey, clientGroup, iterator);
-                continue;
-            }
-
+    private void switchOps(UserGroup clientGroup) {
+        for (Map.Entry<SelectionKey, Connection> pair: clientGroup.getUsers().entrySet()) {
+            SelectionKey key = pair.getKey();
             if (pair.getValue().getMessageQueue().size() > 0) {
-                curKey.interestOps(SelectionKey.OP_WRITE);
+                key.interestOps(SelectionKey.OP_WRITE);
+            }
+            else {
+                key.interestOps(SelectionKey.OP_READ);
             }
         }
+
+
     }
 
     private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
@@ -202,51 +212,11 @@ public class Server implements Runnable {
         }
     }
 
-
-
-
-
-    public void closeConnection(SelectionKey key, Iterator<Map.Entry<SelectionKey, Connection>> iterator) {
-        closeConnection(key, getClientGroup(key), iterator);
-    }
-
-    public void closeConnection(SelectionKey key,
-                                HashMap<SelectionKey, Connection> clientGroup,
-                                Iterator<Map.Entry<SelectionKey, Connection>> iterator) {
-
-        SocketChannel socketChannel = (SocketChannel) key.channel();
-        String message              = clientGroup.get(key).getUsername() + MsgConst.USER_LEFT_POSTFIX;
-        boolean registeredUser      = clientGroup == clients;
-
-        //notify server
-        if (registeredUser)
-            System.out.println(clientGroup.get(key).getUsername() + " sign out. Total: " + (clientGroup.size()-1));
-
-        //ConcurrentModificationException safe remove
-        if (iterator == null)
-            clientGroup.remove(key);
-        else
-            iterator.remove();
-
+    public void cancelKey(SelectionKey key) {
         try {
+            SocketChannel socketChannel = (SocketChannel) key.channel();
             socketChannel.close();
             key.cancel();
-
-            //forget about not registered user
-            if (!registeredUser)
-                return;
-
-            //close session
-            if (clients.size() == 0) {
-                closeSession();
-                return;
-            }
-
-            //say it to everyone
-            for (Map.Entry<SelectionKey, Connection> client: clients.entrySet()) {
-                client.getValue().getMessageQueue().add(message);
-                client.getKey().interestOps(SelectionKey.OP_WRITE);
-            }
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -257,32 +227,23 @@ public class Server implements Runnable {
         return message + System.getProperty("line.separator");
     }
 
-    public boolean isFreeUserName(String userName) {
-        boolean isFree = true;
-
-        for (Map.Entry<SelectionKey, Connection> client: clients.entrySet()) {
-            if (client.getValue().getUsername().equals(userName)) {
-                isFree = false;
-                break;
-            }
-        }
-
-        return isFree;
+    public boolean isFreeUserName(String username) {
+        return !clients.containsUserWith(username);
     }
 
-    public HashMap<SelectionKey, Connection> getClientGroup(SelectionKey key) {
-        return clients.get(key) != null ? clients : notRegisteredClients;
+    public UserGroup getClientGroup(SelectionKey key) {
+        return clients.containsUserWith(key) ? clients : notRegisteredClients;
     }
 
-    public HashMap<SelectionKey, Connection> getNotRegisteredClients() {
+    public UserGroup getNotRegisteredClients() {
         return notRegisteredClients;
     }
 
-    public HashMap<SelectionKey, Connection> getClients() {
+    public UserGroup getClients() {
         return clients;
     }
 
-    public LinkedList<Message> getMessageHistory() {
+    public List<Message> getMessageHistory() {
         return messageHistory;
     }
 }

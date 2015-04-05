@@ -5,6 +5,7 @@ import me.proartex.test.vitamin.chat.server.Server;
 
 import java.nio.channels.SelectionKey;
 import java.util.LinkedList;
+import java.util.List;
 
 public class ShowMessageHistoryCommand implements Executable, Validatable {
 
@@ -15,7 +16,7 @@ public class ShowMessageHistoryCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        LinkedList<String> clientQueue = server.getClients().get(key).getMessageQueue();
+        List<String> clientQueue = server.getClients().getUsersMessageQueue(key);
 
         for (Message message : server.getMessageHistory()) {
             clientQueue.add(message.toString());
@@ -33,6 +34,6 @@ public class ShowMessageHistoryCommand implements Executable, Validatable {
     }
 
     public boolean isValidUser(SelectionKey key) {
-        return server.getClients().containsKey(key);
+        return server.getClients().containsUserWith(key);
     }
 }

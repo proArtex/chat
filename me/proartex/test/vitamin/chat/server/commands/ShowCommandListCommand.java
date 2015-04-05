@@ -3,7 +3,9 @@ package me.proartex.test.vitamin.chat.server.commands;
 import me.proartex.test.vitamin.chat.server.Server;
 
 import java.nio.channels.SelectionKey;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 
 public class ShowCommandListCommand implements Executable, Validatable {
 
@@ -16,16 +18,14 @@ public class ShowCommandListCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        LinkedList<String> clientQueue = server.getClients().get(key).getMessageQueue();
+        List<String> clientQueue = server.getClients().getUsersMessageQueue(key);
 
         String[] commands = new String[] {
                 "/exit - leave the chat",
                 "/total - show number of users in chat",
         };
 
-        for (String command : commands) {
-            clientQueue.add(command);
-        }
+        Collections.addAll(clientQueue, commands);
     }
 
     @Override
@@ -39,6 +39,6 @@ public class ShowCommandListCommand implements Executable, Validatable {
     }
 
     public boolean isValidUser(SelectionKey key) {
-        return server.getClients().containsKey(key);
+        return server.getClients().containsUserWith(key);
     }
 }

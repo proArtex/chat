@@ -13,11 +13,12 @@ public class ExitCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        server.closeConnection(key, null);
+        server.cancelKey(key);
+//        server.closeConnection(key, null);
     }
 
     public boolean isValidUser(SelectionKey key) {
-        return server.getClients().containsKey(key);
+        return server.getClients().containsUserWith(key);
     }
 
     @Override
