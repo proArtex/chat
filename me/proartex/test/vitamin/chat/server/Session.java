@@ -1,5 +1,6 @@
 package me.proartex.test.vitamin.chat.server;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,8 +41,13 @@ public class Session {
         messageHistory.clear();
     }
 
-    //TMP
-    public List<Message> getMessageHistory() {
-        return messageHistory;
+    public String[] getMessageHistory() {
+        String[] messages = new String[ messageHistory.size() ];
+
+        for (int i = 0; i < messages.length; i++) {
+            messages[i] = messageHistory.get(i).toString();
+        }
+
+        return messages;
     }
 }

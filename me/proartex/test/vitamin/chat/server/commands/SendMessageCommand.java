@@ -3,6 +3,7 @@ package me.proartex.test.vitamin.chat.server.commands;
 import me.proartex.test.vitamin.chat.server.User;
 import me.proartex.test.vitamin.chat.server.Message;
 import me.proartex.test.vitamin.chat.server.Server;
+import me.proartex.test.vitamin.chat.server.UserGroup;
 
 import java.nio.channels.SelectionKey;
 import java.util.Date;
@@ -20,13 +21,12 @@ public class SendMessageCommand implements Executable, Validatable {
 
         //msg with server handler time
         Date date        = new Date();
-        String username  = server.getUsers().getNameOfUserWith(key);
+        UserGroup users = server.getUsers();
+        User user = users.getUserWith(key);
+        String username  = user.getUsername();
         Message message  = new Message(date, username + ": " + this.message);
 
-        for (Map.Entry<SelectionKey, User> client: server.getUsers().getUsers().entrySet()) {
-            client.getValue().getMessageQueue().add(message.toString());
-        }
-
+        server.sendMessageToAllUsers(message.toString());
         server.addMessageToHistory(message);
     }
 

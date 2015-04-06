@@ -15,11 +15,9 @@ public class ShowMessageHistoryCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        List<String> clientQueue = server.getUsers().getUsersMessageQueue(key);
-
-        for (Message message : server.getMessageHistory()) {
-            clientQueue.add(message.toString());
-        }
+        //TODO: solve empty case
+        String message = server.getMessageHistory();
+        server.sendMessageToUser(message, key);
     }
 
     @Override

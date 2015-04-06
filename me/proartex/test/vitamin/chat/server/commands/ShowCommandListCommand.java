@@ -1,6 +1,7 @@
 package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.server.Server;
+import me.proartex.test.vitamin.chat.server.Utils;
 
 import java.nio.channels.SelectionKey;
 import java.util.Collections;
@@ -12,19 +13,16 @@ public class ShowCommandListCommand implements Executable, Validatable {
 
     @Override
     public void execute(SelectionKey key) {
-
-        System.out.println("123");
         if (!isValidUser(key))
             return;
-
-        List<String> clientQueue = server.getUsers().getUsersMessageQueue(key);
 
         String[] commands = new String[] {
                 "/exit - leave the chat",
                 "/total - show number of users in chat",
         };
 
-        Collections.addAll(clientQueue, commands);
+        String message = Utils.implodeStringArray(commands, Utils.LINE_SEPARATOR);
+        server.sendMessageToUser(message, key);
     }
 
     @Override

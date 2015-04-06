@@ -14,10 +14,9 @@ public class ShowClientsNumCommand implements Executable, Validatable {
         if (!isValidUser(key))
             return;
 
-        int total           = server.getUsers().count();
-        String totalMessage = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
-
-        server.getUsers().getUsersMessageQueue(key).add(totalMessage);
+        int total = server.getUsers().count();
+        String message = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
+        server.sendMessageToUser(message, key);
     }
 
     @Override

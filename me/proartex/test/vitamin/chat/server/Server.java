@@ -23,7 +23,7 @@ public class Server implements Runnable {
     private Selector selector;
     private ByteBuffer buffer              = ByteBuffer.allocate(512);
     private UserGroup users = new UserGroup();
-    private UserGroup notRegisteredClients = new UserGroup();
+    private UserGroup notRegisteredUsers = new UserGroup();
     private volatile boolean isInterrupted;
 
     public Server() {
@@ -91,10 +91,10 @@ public class Server implements Runnable {
 //                e.printStackTrace();
             }
 
-            users.removeUsersWithCanceledConnection();
-            notRegisteredClients.removeUsersWithCanceledConnection();
-            switchOps(notRegisteredClients);
-            switchOps(users);
+            users.removeUsersWithClosedConnection();
+            notRegisteredUsers.removeUsersWithClosedConnection();
+            switchUserOperations(users);
+            switchUserOperations(notRegisteredUsers);
             processSession();
         }
     }
@@ -118,11 +118,9 @@ public class Server implements Runnable {
         SocketChannel socketChannel = serverChannel.accept();
         socketChannel.configureBlocking(false);
 
-        //register channel to read
         SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ);
 
-//        notRegisteredClients.put(key, new Connection());
-        notRegisteredClients.add(key);
+        notRegisteredUsers.add(key);
     }
 
     private String readFromChannelOf(SelectionKey key) throws IOException {
@@ -144,6 +142,7 @@ public class Server implements Runnable {
 
         if (numRead == -1) {
             System.out.println("-1 READ INVALID!!!");
+            cancelKey(key);
         }
 
         return context.toString();
@@ -152,7 +151,7 @@ public class Server implements Runnable {
     private void writeToChannelOf(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 //        Connection connection       = getClientGroup(key).get(key);
-//        LinkedList<String> queue    = connection.getMessageQueue();
+//        LinkedList<String> queue    = connection.getInboundMessageQueue();
 
         List<String> messageQueue = getClientGroup(key).getUsersMessageQueue(key);
 
@@ -172,10 +171,12 @@ public class Server implements Runnable {
         }
     }
 
-    private void switchOps(UserGroup clientGroup) {
-        for (Map.Entry<SelectionKey, User> pair: clientGroup.getUsers().entrySet()) {
+    private void switchUserOperations(UserGroup userGroup) {
+        for (Map.Entry<SelectionKey, User> pair: userGroup.getUsers().entrySet()) {
             SelectionKey key = pair.getKey();
-            if (pair.getValue().getMessageQueue().size() > 0) {
+            User user = pair.getValue();
+
+            if (user.getInboundMessageQueue().size() > 0) {
                 key.interestOps(SelectionKey.OP_WRITE);
             }
             else {
@@ -222,27 +223,23 @@ public class Server implements Runnable {
     }
 
     private String addLineSeparator(String message) {
-        return message + System.getProperty("line.separator");
+        return message + Utils.LINE_SEPARATOR;
     }
 
-    public boolean isFreeUserName(String username) {
-        return !users.containsUserWith(username);
+    public boolean alreadyContainsUsername(String username) {
+        return users.containsUserWith(username);
     }
 
     public UserGroup getClientGroup(SelectionKey key) {
-        return users.containsUserWith(key) ? users : notRegisteredClients;
+        return users.containsUserWith(key) ? users : notRegisteredUsers;
     }
 
-    public UserGroup getNotRegisteredClients() {
-        return notRegisteredClients;
+    public UserGroup getNotRegisteredUsers() {
+        return notRegisteredUsers;
     }
 
     public UserGroup getUsers() {
         return users;
-    }
-
-    public List<Message> getMessageHistory() {
-        return session.getMessageHistory();
     }
 
     public void addMessageToHistory(Message message) {
@@ -253,4 +250,31 @@ public class Server implements Runnable {
     public boolean containsUserWith(SelectionKey key) {
         return users.containsUserWith(key);
     }
+
+    public void registerUser(SelectionKey key) {
+        User user = notRegisteredUsers.getUserWith(key);
+        notRegisteredUsers.remove(key);
+        users.add(key, user);
+
+        //notify server
+        System.out.println(user.getUsername() + " sign in. Total: " + users.count());
+    }
+
+    public void sendMessageToUser(String message, SelectionKey key) {
+        UserGroup group = getClientGroup(key);
+        group.notifyUserWithKey(message, key);
+    }
+
+    public void sendMessageToAllUsers(String message) {
+        users.notifyAllUsers(message);
+    }
+
+    public String getMessageHistory() {
+        String[] messages = session.getMessageHistory();
+        return Utils.implodeStringArray(messages, Utils.LINE_SEPARATOR);
+    }
+
+//    public void sendMessageToAllUsersExcludes(String message, SelectionKey key) {
+//        users.notifyAllUsersExcludes(message, key);
+//    }
 }

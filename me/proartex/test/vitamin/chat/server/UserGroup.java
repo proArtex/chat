@@ -24,7 +24,7 @@ public class UserGroup {
         users.put(key, user);
     }
 
-    public void dismiss(SelectionKey key) {
+    public void remove(SelectionKey key) {
         users.remove(key);
     }
 
@@ -32,11 +32,32 @@ public class UserGroup {
         return users.size();
     }
 
+    public User getUserWith(SelectionKey key) {
+        return users.get(key);
+    }
+
+    public void notifyUserWithKey(String message, SelectionKey key) {
+        User user = getUserWith(key);
+        sendMessageToUser(message, user);
+    }
+
     public void notifyAllUsers(String message) {
-        for (Map.Entry<SelectionKey, User> client: users.entrySet()) {
-            client.getValue().getMessageQueue().add(message);
+        for (User user : users.values()) {
+            sendMessageToUser(message, user);
         }
     }
+
+//    public void notifyAllUsersExcludes(String message, SelectionKey key) {
+//        for (Map.Entry<SelectionKey, User> pair: users.entrySet()) {
+//            SelectionKey userKey = pair.getKey();
+//            User user = pair.getValue();
+//
+//            if (userKey == key)
+//                continue;
+//
+//            sendMessageToUser(message, user);
+//        }
+//    }
 
     public boolean containsUserWith(SelectionKey key) {
         return users.get(key) != null;
@@ -52,11 +73,13 @@ public class UserGroup {
         return false;
     }
 
+    //-
     public String getNameOfUserWith(SelectionKey key) {
         return users.get(key).getUsername();
     }
 
-    public void removeUsersWithCanceledConnection() {
+    //abstract
+    public void removeUsersWithClosedConnection() {
         Iterator<Map.Entry<SelectionKey, User>> iterator = users.entrySet().iterator();
 
         while (iterator.hasNext()) {
@@ -77,16 +100,16 @@ public class UserGroup {
         }
     }
 
+    private void sendMessageToUser(String message, User user) {
+        user.addMessageToQueue(message);
+    }
+
     //TMP
     public Map<SelectionKey, User> getUsers() {
         return users;
     }
 
     public List<String> getUsersMessageQueue(SelectionKey key) {
-        return users.get(key).getMessageQueue();
-    }
-
-    public User getConnectionWith(SelectionKey key) {
-        return users.get(key);
+        return users.get(key).getInboundMessageQueue();
     }
 }
