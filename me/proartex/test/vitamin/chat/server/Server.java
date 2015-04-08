@@ -1,7 +1,9 @@
 package me.proartex.test.vitamin.chat.server;
 
+import me.proartex.test.vitamin.chat.Utils;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 import me.proartex.test.vitamin.chat.server.commands.Executable;
+import me.proartex.test.vitamin.chat.server.exceptions.ServerException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -21,7 +23,7 @@ public class Server implements Runnable {
     private InetSocketAddress socketAddress;
     private ServerSocketChannel serverChannel;
     private Selector selector;
-    private ByteBuffer buffer              = ByteBuffer.allocate(512);
+    private ByteBuffer buffer = ByteBuffer.allocate(512);
     private UserGroup users = new UserGroup();
     private UserGroup notRegisteredUsers = new UserGroup();
     private volatile boolean isInterrupted;
@@ -270,7 +272,7 @@ public class Server implements Runnable {
     }
 
     public String getMessageHistory() {
-        String[] messages = session.getMessageHistory();
+        String[] messages = session.getFormattedMessageHistory();
         return Utils.implodeStringArray(messages, Utils.LINE_SEPARATOR);
     }
 

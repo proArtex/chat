@@ -1,6 +1,5 @@
 package me.proartex.test.vitamin.chat.server;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,7 +22,7 @@ public class Session {
     public void close() {
         System.out.println("Session " + sessionId + " has been closed");
         sessionId = 0;
-        clearMessageHistory();
+        messageHistory.clear();
     }
 
     public boolean isOpened() {
@@ -31,17 +30,13 @@ public class Session {
     }
 
     public void noteMessage(Message message) {
-        if (messageHistory.size() == messageHistoryLimit)
+        if (limitIsReached())
             messageHistory.remove(0);
 
         messageHistory.add(message);
     }
 
-    private void clearMessageHistory() {
-        messageHistory.clear();
-    }
-
-    public String[] getMessageHistory() {
+    public String[] getFormattedMessageHistory() {
         String[] messages = new String[ messageHistory.size() ];
 
         for (int i = 0; i < messages.length; i++) {
@@ -49,5 +44,9 @@ public class Session {
         }
 
         return messages;
+    }
+
+    private boolean limitIsReached() {
+        return messageHistory.size() == messageHistoryLimit;
     }
 }

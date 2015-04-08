@@ -41,6 +41,7 @@ public class UserGroup {
         sendMessageToUser(message, user);
     }
 
+    //union?
     public void notifyAllUsers(String message) {
         for (User user : users.values()) {
             sendMessageToUser(message, user);
@@ -59,10 +60,12 @@ public class UserGroup {
 //        }
 //    }
 
+    //union
     public boolean containsUserWith(SelectionKey key) {
         return users.get(key) != null;
     }
 
+    //for registered
     public boolean containsUserWith(String username) {
         for (Map.Entry<SelectionKey, User> client: users.entrySet()) {
             if (client.getValue().getUsername().equals(username)) {
@@ -73,11 +76,6 @@ public class UserGroup {
         return false;
     }
 
-    //-
-    public String getNameOfUserWith(SelectionKey key) {
-        return users.get(key).getUsername();
-    }
-
     //abstract
     public void removeUsersWithClosedConnection() {
         Iterator<Map.Entry<SelectionKey, User>> iterator = users.entrySet().iterator();
@@ -85,9 +83,10 @@ public class UserGroup {
         while (iterator.hasNext()) {
             Map.Entry<SelectionKey, User> pair = iterator.next();
             SelectionKey key = pair.getKey();
+            User user = pair.getValue();
 
             if (!key.isValid()) {
-                String username = getNameOfUserWith(key);
+                String username = user.getUsername();
                 String message = username + MsgConst.USER_LEFT_POSTFIX;
                 iterator.remove();
 
@@ -100,6 +99,7 @@ public class UserGroup {
         }
     }
 
+    //union
     private void sendMessageToUser(String message, User user) {
         user.addMessageToQueue(message);
     }

@@ -17,6 +17,7 @@ public class SendMessageCommand implements Executable, Validatable {
     @Override
     public void execute(SelectionKey key) {
         if (!isValidUser(key))
+            //TODO: make new InvalidCommand() and send
             return;
 
         //msg with server handler time

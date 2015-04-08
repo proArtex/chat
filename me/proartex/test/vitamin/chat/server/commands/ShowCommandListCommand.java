@@ -1,11 +1,9 @@
 package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.server.Server;
-import me.proartex.test.vitamin.chat.server.Utils;
+import me.proartex.test.vitamin.chat.Utils;
 
 import java.nio.channels.SelectionKey;
-import java.util.Collections;
-import java.util.List;
 
 public class ShowCommandListCommand implements Executable, Validatable {
 

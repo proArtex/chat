@@ -10,8 +10,10 @@ public class ExitCommand implements Executable, Validatable {
 
     @Override
     public void execute(SelectionKey key) {
-        if (!isValidUser(key))
+        if (!isValidUser(key)) {
+            //TODO: send invalid back
             return;
+        }
 
         server.cancelKey(key);
     }

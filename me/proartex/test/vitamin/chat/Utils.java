@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.server;
+package me.proartex.test.vitamin.chat;
 
 public class Utils {
 

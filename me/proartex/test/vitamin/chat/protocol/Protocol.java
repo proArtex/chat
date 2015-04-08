@@ -28,18 +28,6 @@ public class Protocol {
         }
     }
 
-    public static ArrayList<Executable> deserialize(String serializedCommand) {
-        try {
-            return tryToDeserialize(serializedCommand);
-        }
-        catch (ReflectiveOperationException e) {
-            e.printStackTrace();
-            //TODO: exception?
-        }
-
-        return null; //TODO: fix that sh1t
-    }
-
     private static String tryToSerialize(Serializable command) throws IllegalAccessException, ClassNotFoundException {
         StringBuilder serializedCommand = new StringBuilder(COMMAND_DELIMITER);
         Class cl = command.getClass();
@@ -58,16 +46,20 @@ public class Protocol {
         return serializedCommand.toString();
     }
 
-    private static ArrayList<Executable> tryToDeserialize(String serializedCommands) throws ReflectiveOperationException {
+    public static ArrayList<Executable> deserialize(String serializedCommands) {
         ArrayList<Executable> executableCommands = new ArrayList<>();
 
-        for (String command : serializedCommands.split(COMMAND_DELIMITER)) {
-            command = command.trim();
-            if ("".equals(command))
+        for (String stringCommand : serializedCommands.split(COMMAND_DELIMITER)) {
+            stringCommand = stringCommand.trim();
+            if ("".equals(stringCommand))
                 continue;
 
-            Executable executableCommand = getInstanceFor(command);
-            executableCommands.add(executableCommand);
+            HashMap<String, String> params = getParamsOf(stringCommand);
+            int id = shiftIdFrom(params);
+            Executable command = getCommandBy(id);
+            setParamsToCommand(params, command);
+
+            executableCommands.add(command);
         }
 
         return executableCommands;
@@ -78,11 +70,6 @@ public class Protocol {
         Object[] array = castObjectToArray(arrayClass.cast(field.get(command)));
 
         return Arrays.asList(array).toString();
-    }
-
-    private static Executable getInstanceFor(String command) {
-        HashMap<String, String> params = getParamsOf(command);
-        return getCommandWith(params);
     }
 
     private static Object[] castObjectToArray(Object array) {
@@ -108,20 +95,6 @@ public class Protocol {
         }
 
         return params;
-    }
-
-    private static Executable getCommandWith(HashMap<String, String> params) {
-        int id = shiftIdFrom(params);
-        Executable command = getCommandBy(id);
-
-        if (!isValidatable(command))
-            return command;
-
-        setParamsToCommand(params, command);
-        if (isValid(command))
-            return command;
-
-        return new InvalidCommand();
     }
 
     private static int shiftIdFrom(HashMap<String, String> params) {
@@ -156,14 +129,11 @@ public class Protocol {
             case Command.TOTAL:
                 return new ShowClientsNumCommand();
 
-            case Command.UNKNOWN:
-                return new UnknownCommand();
-
             case Command.EXIT:
                 return new ExitCommand();
 
             default:
-                return new InvalidCommand();
+                return new UnknownCommand();
         }
     }
 
@@ -185,13 +155,5 @@ public class Protocol {
                 e.printStackTrace();
             }
         }
-    }
-
-    private static boolean isValidatable(Executable command) {
-        return command instanceof Validatable;
-    }
-
-    private static boolean isValid(Executable command) {
-        return ((Validatable) command).isValid();
     }
 }

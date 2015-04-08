@@ -15,25 +15,25 @@ public class ProtocolTest extends TestCase {
     public void testDeserializeInvalidString() {
         String command = "abrakadabra=1;";
         Executable executableCommand = Protocol.deserialize(command).get(0);
-        assertTrue(executableCommand instanceof InvalidCommand);
+        assertTrue(executableCommand instanceof UnknownCommand);
     }
 
     public void testDeserializeNoId() {
         String command = "<SYS_COMMAND>a=2;username=123;";
         Executable executableCommand = Protocol.deserialize(command).get(0);
-        assertTrue(executableCommand instanceof InvalidCommand);
+        assertTrue(executableCommand instanceof UnknownCommand);
     }
 
     public void testDeserializeBigId() {
         String command = "<SYS_COMMAND>id=999999999999999999;";
         Executable executableCommand = Protocol.deserialize(command).get(0);
-        assertTrue(executableCommand instanceof InvalidCommand);
+        assertTrue(executableCommand instanceof UnknownCommand);
     }
 
     public void testDeserializeWrongId() {
         String command = "<SYS_COMMAND>id=&=1+2;username=123;";
         Executable executableCommand = Protocol.deserialize(command).get(0);
-        assertTrue(executableCommand instanceof InvalidCommand);
+        assertTrue(executableCommand instanceof UnknownCommand);
     }
 
     public void testRegisterUserCommand() {
@@ -48,20 +48,20 @@ public class ProtocolTest extends TestCase {
         assertTrue(getByIndexAndDeserialize(0) instanceof RegisterUserCommand);
         assertTrue(getByIndexAndDeserialize(1) instanceof RegisterUserCommand);
         assertTrue(getByIndexAndDeserialize(2) instanceof RegisterUserCommand);
-        assertTrue(getByIndexAndDeserialize(3) instanceof InvalidCommand);
+        assertTrue(getByIndexAndDeserialize(3) instanceof RegisterUserCommand);
         assertTrue(getByIndexAndDeserialize(4) instanceof ShowMessageHistoryCommand);
     }
 
     public void testDeserializeRegisterNoUsername() {
         String command = "<SYS_COMMAND>id=2;";
         Executable executableCommand = Protocol.deserialize(command).get(0);
-        assertTrue(executableCommand instanceof InvalidCommand);
+        assertTrue(executableCommand instanceof RegisterUserCommand);
     }
 
     public void testDeserializeInvalidCommand() {
         String command = "<SYS_COMMAND>id=-1;username=123;";
         Executable executableCommand = Protocol.deserialize(command).get(0);
-        assertTrue(executableCommand instanceof InvalidCommand);
+        assertTrue(executableCommand instanceof UnknownCommand);
     }
 
     public void testDeserializeCommandListOk() {
