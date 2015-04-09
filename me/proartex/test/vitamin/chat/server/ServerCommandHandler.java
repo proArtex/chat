@@ -1,14 +1,14 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.Executor;
+import me.proartex.test.vitamin.chat.CommandHandler;
 
 import java.nio.channels.SelectionKey;
 
-public class CommandExecutor implements Executor {
+public class ServerCommandHandler implements CommandHandler {
 
     Server server;
 
-    public CommandExecutor(Server server) {
+    public ServerCommandHandler(Server server) {
         this.server = server;
     }
 

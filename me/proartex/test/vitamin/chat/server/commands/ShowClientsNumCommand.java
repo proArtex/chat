@@ -8,11 +8,19 @@ import java.nio.channels.SelectionKey;
 public class ShowClientsNumCommand implements Executable, Validatable {
 
     private Server server;
+    private SelectionKey key;
+
+    public ShowClientsNumCommand(Server server, SelectionKey key) {
+        this.server = server;
+        this.key = key;
+    }
 
     @Override
-    public void execute(SelectionKey key) {
-        if (!isValidUser(key))
+    public void execute() {
+        if (!isValidCommand()) {
+            server.sendMessageToUser(MsgConst.INVALID_CLIENT_NUM_COMMAND, key);
             return;
+        }
 
         int total = server.getUsers().count();
         String message = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
@@ -20,16 +28,7 @@ public class ShowClientsNumCommand implements Executable, Validatable {
     }
 
     @Override
-    public void setServer(Server server) {
-        this.server = server;
-    }
-
-    @Override
-    public boolean isValid() {
-        return true;
-    }
-
-    public boolean isValidUser(SelectionKey key) {
+    public boolean isValidCommand() {
         return server.getUsers().containsUserWith(key);
     }
 }

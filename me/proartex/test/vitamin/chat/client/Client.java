@@ -184,8 +184,4 @@ public class Client extends Thread {
     private void send(String serializedCommand) {
         out.println(serializedCommand);
     }
-
-    public BufferedReader getIn() {
-        return in;
-    }
 }

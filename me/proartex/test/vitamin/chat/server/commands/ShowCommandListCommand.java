@@ -1,5 +1,6 @@
 package me.proartex.test.vitamin.chat.server.commands;
 
+import me.proartex.test.vitamin.chat.MsgConst;
 import me.proartex.test.vitamin.chat.server.Server;
 import me.proartex.test.vitamin.chat.Utils;
 
@@ -8,11 +9,19 @@ import java.nio.channels.SelectionKey;
 public class ShowCommandListCommand implements Executable, Validatable {
 
     private Server server;
+    private SelectionKey key;
+
+    public ShowCommandListCommand(Server server, SelectionKey key) {
+        this.server = server;
+        this.key = key;
+    }
 
     @Override
-    public void execute(SelectionKey key) {
-        if (!isValidUser(key))
+    public void execute() {
+        if (!isValidCommand()) {
+            server.sendMessageToUser(MsgConst.INVALID_COMMAND_LIST_COMMAND, key);
             return;
+        }
 
         String[] commands = new String[] {
                 "/exit - leave the chat",
@@ -24,16 +33,7 @@ public class ShowCommandListCommand implements Executable, Validatable {
     }
 
     @Override
-    public void setServer(Server server) {
-        this.server = server;
-    }
-
-    @Override
-    public boolean isValid() {
-        return true;
-    }
-
-    public boolean isValidUser(SelectionKey key) {
+    public boolean isValidCommand() {
         return server.getUsers().containsUserWith(key);
     }
 }

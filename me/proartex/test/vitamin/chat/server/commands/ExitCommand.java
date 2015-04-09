@@ -10,8 +10,10 @@ public class ExitCommand implements Executable, Validatable {
 
     @Override
     public void execute(SelectionKey key) {
-        if (!isValidUser(key)) {
+        if (!isValid(key)) {
             //TODO: send invalid back
+            String message = "bla bla bla is invalid";
+            server.sendMessageToUser(message, key);
             return;
         }
 
@@ -24,12 +26,7 @@ public class ExitCommand implements Executable, Validatable {
     }
 
     @Override
-    public boolean isValid() {
-//        return server.containsUserWith(key);
-        return true;
-    }
-
-    public boolean isValidUser(SelectionKey key) {
+    public boolean isValid(SelectionKey key) {
         return server.containsUserWith(key);
     }
 }
