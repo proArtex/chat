@@ -6,6 +6,5 @@ import me.proartex.test.vitamin.chat.server.Server;
 import java.nio.channels.SelectionKey;
 
 public interface Executable {
-    void setServer(Server server);
-    void execute(SelectionKey key);
+    void execute();
 }

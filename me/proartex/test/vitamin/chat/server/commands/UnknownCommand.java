@@ -8,16 +8,17 @@ import java.nio.channels.SelectionKey;
 public class UnknownCommand implements Executable {
 
     private Server server;
+    private SelectionKey key;
     private String context;
 
-    @Override
-    public void execute(SelectionKey key) {
-        String message = MsgConst.UNKNOWN_COMMAND_PREFIX + "'" + context + "'";
-        server.sendMessageToUser(message, key);
+    public UnknownCommand(Server server, SelectionKey key) {
+        this.server = server;
+        this.key = key;
     }
 
     @Override
-    public void setServer(Server server) {
-        this.server = server;
+    public void execute() {
+        String message = MsgConst.UNKNOWN_COMMAND_PREFIX + "'" + context + "'";
+        server.sendMessageToUser(message, key);
     }
 }

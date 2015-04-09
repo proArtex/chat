@@ -2,11 +2,13 @@ package me.proartex.test.vitamin.chat.protocol;
 
 import me.proartex.test.vitamin.chat.Command;
 import me.proartex.test.vitamin.chat.client.commands.Serializable;
+import me.proartex.test.vitamin.chat.server.Server;
 import me.proartex.test.vitamin.chat.server.commands.Executable;
 import me.proartex.test.vitamin.chat.server.commands.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,7 +48,7 @@ public class Protocol {
         return serializedCommand.toString();
     }
 
-    public static ArrayList<Executable> deserialize(String serializedCommands) {
+    public static ArrayList<Executable> deserialize(String serializedCommands, Server server, SelectionKey key) {
         ArrayList<Executable> executableCommands = new ArrayList<>();
 
         for (String stringCommand : serializedCommands.split(COMMAND_DELIMITER)) {
@@ -56,7 +58,7 @@ public class Protocol {
 
             HashMap<String, String> params = getParamsOf(stringCommand);
             int id = shiftIdFrom(params);
-            Executable command = getCommandBy(id);
+            Executable command = getCommandFor(id, server, key);
             setParamsToCommand(params, command);
 
             executableCommands.add(command);
@@ -112,33 +114,35 @@ public class Protocol {
     }
 
     //TODO: server factory
-    private static Executable getCommandBy(int id) {
+    private static Executable getCommandFor(int id, Server server, SelectionKey key) {
         switch (id) {
             case Command.REGISTER:
-                return new RegisterUserCommand();
+                return new RegisterUserCommand(server, key);
 
             case Command.MESSAGE:
-                return new SendMessageCommand();
+                return new SendMessageCommand(server, key);
 
             case Command.HISTORY:
-                return new ShowMessageHistoryCommand();
+                return new ShowMessageHistoryCommand(server, key);
 
             case Command.COMMANDS:
-                return new ShowCommandListCommand();
+                return new ShowCommandListCommand(server, key);
 
             case Command.TOTAL:
-                return new ShowClientsNumCommand();
+                return new ShowClientsNumCommand(server, key);
 
             case Command.EXIT:
-                return new ExitCommand();
+                return new ExitCommand(server, key);
 
             default:
-                return new UnknownCommand();
+                return new UnknownCommand(server, key);
         }
     }
 
     private static void setParamsToCommand(HashMap<String, String> params, Executable command) {
         Class<?> commandClass = command.getClass();
+
+        //TODO: excludes server/key;
 
         for (Map.Entry<String, String> pair : params.entrySet()) {
             String name = pair.getKey();

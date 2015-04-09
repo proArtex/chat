@@ -9,35 +9,29 @@ import java.nio.channels.SelectionKey;
 public class RegisterUserCommand implements Executable, Validatable {
 
     private Server server;
+    private SelectionKey key;
     private String username;
 
+    public RegisterUserCommand(Server server, SelectionKey key) {
+        this.server = server;
+        this.key = key;
+    }
+
     @Override
-    public void execute(SelectionKey key) {
-        String message,username;
-        User user;
-
-        //already registered case
-        if (!isValidUser(key)) {
-            user = server.getUsers().getUserWith(key);
-            username   = user.getUsername();
-            message    = MsgConst.ALREADY_REGISTERED_PREFIX + username;
-
-            server.sendMessageToUser(message, key);
+    public void execute() {
+        if (!isValidCommand()) {
+            server.sendMessageToUser(MsgConst.INVALID_REGISTER_COMMAND, key);
             return;
         }
 
-
-
-        user = server.getNotRegisteredUsers().getUserWith(key);
-
-        //new one case
-        if (server.alreadyContainsUsername(this.username)) {
+        if (server.alreadyContainsUsername(username)) {
             server.sendMessageToUser(MsgConst.REGISTER_FAIL, key);
             return;
         }
 
-        message = this.username + MsgConst.USER_SIGN_POSTFIX;
-        user.setUsername(this.username);
+        String message = username + MsgConst.USER_SIGN_POSTFIX;
+        User user = server.getNotRegisteredUsers().getUserWith(key);
+        user.setUsername(username);
 
         server.sendMessageToAllUsers(message);
         server.registerUser(key);
@@ -45,16 +39,7 @@ public class RegisterUserCommand implements Executable, Validatable {
     }
 
     @Override
-    public void setServer(Server server) {
-        this.server = server;
-    }
-
-    public boolean isValidUser(SelectionKey key) {
-        return server.getNotRegisteredUsers().containsUserWith(key);
-    }
-
-    @Override
-    public boolean isValid() {
-        return username != null;
+    public boolean isValidCommand() {
+        return username != null && server.getNotRegisteredUsers().containsUserWith(key);
     }
 }

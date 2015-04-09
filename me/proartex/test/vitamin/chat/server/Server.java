@@ -197,11 +197,10 @@ public class Server implements Runnable {
     }
 
     private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
-        ArrayList<Executable> commands = Protocol.deserialize(serializedCommands);
+        ArrayList<Executable> commands = Protocol.deserialize(serializedCommands, this, key);
 //        System.out.println("found commands: "+ commands);
         for (Executable command : commands) {
-            command.setServer(this);
-            command.execute(key);
+            command.execute();
         }
     }
 
