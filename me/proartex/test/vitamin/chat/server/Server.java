@@ -3,7 +3,9 @@ package me.proartex.test.vitamin.chat.server;
 import me.proartex.test.vitamin.chat.Utils;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 import me.proartex.test.vitamin.chat.server.commands.Executable;
+import me.proartex.test.vitamin.chat.server.exceptions.ReadException;
 import me.proartex.test.vitamin.chat.server.exceptions.ServerException;
+import me.proartex.test.vitamin.chat.server.exceptions.WriteException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -19,14 +21,15 @@ public class Server implements Runnable {
 
     public static String DEFAULT_HOST = "localhost";
     public static int DEFAULT_PORT    = 9993;
+    private volatile Thread serverThread;
     private Session session;
+    private RegisteredGroup registeredUsers;
+    private NotRegisteredGroup notRegisteredUsers;
+    private ServerCommandHandler commandHandler;
     private InetSocketAddress socketAddress;
+    private ByteBuffer buffer;
     private ServerSocketChannel serverChannel;
     private Selector selector;
-    private ByteBuffer buffer = ByteBuffer.allocate(512);
-    private UserGroup users = new UserGroup();
-    private UserGroup notRegisteredUsers = new UserGroup();
-    private volatile boolean isInterrupted;
 
     public Server() {
         this(DEFAULT_HOST, DEFAULT_PORT);
@@ -34,48 +37,62 @@ public class Server implements Runnable {
 
     public Server(String host, int port) throws ServerException {
         try {
-            session = new Session();
-            socketAddress = new InetSocketAddress(host, port);
-            selector = Selector.open();
-            serverChannel = ServerSocketChannel.open();
-            configureChannel();
+            session            = new Session();
+            registeredUsers    = new RegisteredGroup();
+            notRegisteredUsers = new NotRegisteredGroup();
+            commandHandler     = new ServerCommandHandler(this, session, registeredUsers, notRegisteredUsers);
+            socketAddress      = new InetSocketAddress(host, port);
+            buffer             = ByteBuffer.allocate(512);
         }
-        catch (IOException e) {
-            throw new ServerException("Server initialization failed: " + e.getMessage());
-        }
-        finally {
-            //TODO: close resources
+        catch (Throwable t) {
+            throw new ServerException("Server initialization failed: " + t.getMessage());
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Server server = new Server();
         server.start();
+//        Thread.sleep(10000);
+//        server.stop();
     }
 
-    public void start() {
-        System.out.println("Starting server");
-        new Thread(this).start();
+    public void start() throws ServerException {
+        try {
+            initializeAndConfigureResources();
+            serverThread = new Thread(this);
+            serverThread.start();
+            System.out.println("Server started at " + socketAddress.toString());
+        }
+        catch (Throwable t) {
+            closeResourcesIgnoringExceptions();
+            throw new ServerException("Server starting failed: " + t.getMessage());
+        }
     }
 
-    public void stop() {
-        System.out.println("Stopping server");
-        isInterrupted = true;
+    public void stop() throws ServerException {
+        try {
+            serverThread.interrupt();
+            while (serverThread.isAlive()) {
+                Thread.sleep(500);
+            }
+            System.out.println("Server stopped");
+        }
+        catch (Throwable t) {
+            throw new ServerException("Server stopping failed: " + t.getMessage());
+        }
     }
 
     @Override
     public void run() {
-        while (!isInterrupted) {
+        while (!serverThread.isInterrupted()) {
             System.out.println("new iteration");
 
             try {
                 Set<SelectionKey> keys = listenForNewActivitiesWithTimeout(1000);
                 for (SelectionKey key : keys) {
 
-                    if (!key.isValid()) {
-                        System.out.println("INVALID 1");
+                    if (!key.isValid())
                         continue;
-                    }
 
                     if (key.isAcceptable()) {
                         acceptConnection();
@@ -89,22 +106,43 @@ public class Server implements Runnable {
                     }
                 }
             }
+            catch (ReadException | WriteException ignore) {
+                /*NOP*/
+            }
             catch (IOException e) {
-//                e.printStackTrace();
+                e.printStackTrace();
+            }
+            catch (Throwable t) {
+                t.printStackTrace();
+                break;
             }
 
-            users.removeUsersWithClosedConnection();
+            registeredUsers.removeUsersWithClosedConnection();
             notRegisteredUsers.removeUsersWithClosedConnection();
-            switchUserOperations(users);
+            switchUserOperations(registeredUsers);
             switchUserOperations(notRegisteredUsers);
             processSession();
         }
+
+        closeResourcesIgnoringExceptions();
     }
 
-    private void configureChannel() throws IOException {
+    private void initializeAndConfigureResources() throws IOException {
+        serverChannel = ServerSocketChannel.open();
+        selector = Selector.open();
         serverChannel.configureBlocking(false);
         serverChannel.socket().bind(socketAddress);
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+    }
+
+    private void closeResourcesIgnoringExceptions() {
+        try {
+            if (serverChannel != null)
+                serverChannel.close();
+            if (selector != null)
+                selector.close();
+        }
+        catch (Throwable ignore) {/*NOP*/}
     }
 
     private Set<SelectionKey> listenForNewActivitiesWithTimeout(long timeout) throws IOException {
@@ -119,32 +157,31 @@ public class Server implements Runnable {
     private void acceptConnection() throws IOException {
         SocketChannel socketChannel = serverChannel.accept();
         socketChannel.configureBlocking(false);
-
         SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ);
 
-        notRegisteredUsers.add(key);
+        notRegisteredUsers.add(key, new User());
     }
 
     private String readFromChannelOf(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        int numRead;
         StringBuilder context = new StringBuilder();
+        int numRead;
 
         try {
             while ((numRead = socketChannel.read((ByteBuffer) buffer.clear())) > 0) {
-                context.append(new String(buffer.array(), 0, numRead, StandardCharsets.UTF_8));
+                String data = new String(buffer.array(), 0, numRead, StandardCharsets.UTF_8);
+                context.append(data);
             }
         }
         catch (IOException e) {
-            System.out.println("INVALID ON READ");
             cancelKey(key);
-            throw e;
+            throw new ReadException();
         }
 
         if (numRead == -1) {
-            System.out.println("-1 READ INVALID!!!");
             cancelKey(key);
+            throw new ReadException();
         }
 
         return context.toString();
@@ -152,24 +189,23 @@ public class Server implements Runnable {
 
     private void writeToChannelOf(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-//        Connection connection       = getClientGroup(key).get(key);
-//        LinkedList<String> queue    = connection.getInboundMessageQueue();
 
-        List<String> messageQueue = getClientGroup(key).getUsersMessageQueue(key);
+        UserGroup userGroup = getClientGroup(key);
+        User user = userGroup.getUserWith(key);
+        List<String> messageQueue = user.getInboundMessageQueue();
 
         try {
             Iterator<String> iterator = messageQueue.iterator();
             while (iterator.hasNext()) {
-                String message = addLineSeparator(iterator.next());
+                String message = Utils.addLineSeparator(iterator.next());
                 ByteBuffer bufferedMessage = ByteBuffer.wrap(message.getBytes());
                 socketChannel.write(bufferedMessage);
                 iterator.remove();
             }
         }
         catch (IOException e) {
-            System.out.println("INVALID ON WRITE");
             cancelKey(key);
-            throw e;
+            throw new WriteException();
         }
     }
 
@@ -197,14 +233,22 @@ public class Server implements Runnable {
     }
 
     private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
-        ArrayList<Executable> commands = Protocol.deserialize(serializedCommands, this, key);
+        ArrayList<Executable> commands = Protocol.deserialize(serializedCommands, commandHandler, key);
 //        System.out.println("found commands: "+ commands);
         for (Executable command : commands) {
             command.execute();
         }
     }
 
-    public void cancelKey(SelectionKey key) {
+    private boolean timeToOpenSession() {
+        return registeredUsers.count() > 0 && !session.isOpened();
+    }
+
+    private boolean timeToCloseSession() {
+        return registeredUsers.count() == 0 && session.isOpened();
+    }
+
+    void cancelKey(SelectionKey key) {
         try {
             SocketChannel socketChannel = (SocketChannel) key.channel();
             socketChannel.close();
@@ -215,67 +259,7 @@ public class Server implements Runnable {
         }
     }
 
-    private boolean timeToOpenSession() {
-        return users.count() > 0 && !session.isOpened();
+    UserGroup getClientGroup(SelectionKey key) {
+        return registeredUsers.containsUserWith(key) ? registeredUsers : notRegisteredUsers;
     }
-
-    private boolean timeToCloseSession() {
-        return users.count() == 0 && session.isOpened();
-    }
-
-    private String addLineSeparator(String message) {
-        return message + Utils.LINE_SEPARATOR;
-    }
-
-    public boolean alreadyContainsUsername(String username) {
-        return users.containsUserWith(username);
-    }
-
-    public UserGroup getClientGroup(SelectionKey key) {
-        return users.containsUserWith(key) ? users : notRegisteredUsers;
-    }
-
-    public UserGroup getNotRegisteredUsers() {
-        return notRegisteredUsers;
-    }
-
-    public UserGroup getUsers() {
-        return users;
-    }
-
-    public void addMessageToHistory(Message message) {
-        session.noteMessage(message);
-    }
-
-    //FROM COMMANDS
-    public boolean containsUserWith(SelectionKey key) {
-        return users.containsUserWith(key);
-    }
-
-    public void registerUser(SelectionKey key) {
-        User user = notRegisteredUsers.getUserWith(key);
-        notRegisteredUsers.remove(key);
-        users.add(key, user);
-
-        //notify server
-        System.out.println(user.getUsername() + " sign in. Total: " + users.count());
-    }
-
-    public void sendMessageToUser(String message, SelectionKey key) {
-        UserGroup group = getClientGroup(key);
-        group.notifyUserWithKey(message, key);
-    }
-
-    public void sendMessageToAllUsers(String message) {
-        users.notifyAllUsers(message);
-    }
-
-    public String getMessageHistory() {
-        String[] messages = session.getFormattedMessageHistory();
-        return Utils.implodeStringArray(messages, Utils.LINE_SEPARATOR);
-    }
-
-//    public void sendMessageToAllUsersExcludes(String message, SelectionKey key) {
-//        users.notifyAllUsersExcludes(message, key);
-//    }
 }

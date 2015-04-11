@@ -3,6 +3,7 @@ package me.proartex.test.vitamin.chat.protocol;
 import me.proartex.test.vitamin.chat.Command;
 import me.proartex.test.vitamin.chat.client.commands.Serializable;
 import me.proartex.test.vitamin.chat.server.Server;
+import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
 import me.proartex.test.vitamin.chat.server.commands.Executable;
 import me.proartex.test.vitamin.chat.server.commands.*;
 
@@ -48,7 +49,7 @@ public class Protocol {
         return serializedCommand.toString();
     }
 
-    public static ArrayList<Executable> deserialize(String serializedCommands, Server server, SelectionKey key) {
+    public static ArrayList<Executable> deserialize(String serializedCommands, ServerCommandHandler commandHandler, SelectionKey key) {
         ArrayList<Executable> executableCommands = new ArrayList<>();
 
         for (String stringCommand : serializedCommands.split(COMMAND_DELIMITER)) {
@@ -58,7 +59,7 @@ public class Protocol {
 
             HashMap<String, String> params = getParamsOf(stringCommand);
             int id = shiftIdFrom(params);
-            Executable command = getCommandFor(id, server, key);
+            Executable command = getCommandFor(id, commandHandler, key);
             setParamsToCommand(params, command);
 
             executableCommands.add(command);
@@ -114,28 +115,28 @@ public class Protocol {
     }
 
     //TODO: server factory
-    private static Executable getCommandFor(int id, Server server, SelectionKey key) {
+    private static Executable getCommandFor(int id, ServerCommandHandler commandHandler, SelectionKey key) {
         switch (id) {
             case Command.REGISTER:
-                return new RegisterUserCommand(server, key);
+                return new RegisterUserCommand(commandHandler, key);
 
             case Command.MESSAGE:
-                return new SendMessageCommand(server, key);
+                return new SendMessageCommand(commandHandler, key);
 
             case Command.HISTORY:
-                return new ShowMessageHistoryCommand(server, key);
+                return new ShowMessageHistoryCommand(commandHandler, key);
 
             case Command.COMMANDS:
-                return new ShowCommandListCommand(server, key);
+                return new ShowCommandListCommand(commandHandler, key);
 
             case Command.TOTAL:
-                return new ShowClientsNumCommand(server, key);
+                return new ShowClientsNumCommand(commandHandler, key);
 
             case Command.EXIT:
-                return new ExitCommand(server, key);
+                return new ExitCommand(commandHandler, key);
 
             default:
-                return new UnknownCommand(server, key);
+                return new UnknownCommand(commandHandler, key);
         }
     }
 

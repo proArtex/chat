@@ -1,115 +1,47 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.MsgConst;
-
 import java.nio.channels.SelectionKey;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-public class UserGroup {
+public abstract class UserGroup {
 
-    private Map<SelectionKey, User> users;
+    protected abstract Map<SelectionKey, User> _users();
 
-    public UserGroup() {
-        users = new HashMap<>();
-    }
-
-    public void add(SelectionKey key) {
-        add(key, new User());
-    }
+    public abstract void removeUsersWithClosedConnection();
 
     public void add(SelectionKey key, User user) {
-        users.put(key, user);
+        _users().put(key, user);
     }
 
     public void remove(SelectionKey key) {
-        users.remove(key);
+        _users().remove(key);
     }
 
     public int count() {
-        return users.size();
+        return _users().size();
+    }
+
+    public boolean containsUserWith(SelectionKey key) {
+        return getUserWith(key) != null;
     }
 
     public User getUserWith(SelectionKey key) {
-        return users.get(key);
+        return _users().get(key);
     }
 
     public void notifyUserWithKey(String message, SelectionKey key) {
         User user = getUserWith(key);
-        sendMessageToUser(message, user);
+        _sendMessageToUser(message, user);
     }
 
-    //union?
-    public void notifyAllUsers(String message) {
-        for (User user : users.values()) {
-            sendMessageToUser(message, user);
-        }
-    }
-
-//    public void notifyAllUsersExcludes(String message, SelectionKey key) {
-//        for (Map.Entry<SelectionKey, User> pair: users.entrySet()) {
-//            SelectionKey userKey = pair.getKey();
-//            User user = pair.getValue();
-//
-//            if (userKey == key)
-//                continue;
-//
-//            sendMessageToUser(message, user);
-//        }
-//    }
-
-    //union
-    public boolean containsUserWith(SelectionKey key) {
-        return users.get(key) != null;
-    }
-
-    //for registered
-    public boolean containsUserWith(String username) {
-        for (Map.Entry<SelectionKey, User> client: users.entrySet()) {
-            if (client.getValue().getUsername().equals(username)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    //abstract
-    public void removeUsersWithClosedConnection() {
-        Iterator<Map.Entry<SelectionKey, User>> iterator = users.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<SelectionKey, User> pair = iterator.next();
-            SelectionKey key = pair.getKey();
-            User user = pair.getValue();
-
-            if (!key.isValid()) {
-                String username = user.getUsername();
-                String message = username + MsgConst.USER_LEFT_POSTFIX;
-                iterator.remove();
-
-                //TODO: solve registered problem
-                if (true) {
-                    notifyAllUsers(message);
-                    System.out.println(username + " sign out. Total: " + count());
-                }
-            }
-        }
-    }
-
-    //union
-    private void sendMessageToUser(String message, User user) {
+    protected void _sendMessageToUser(String message, User user) {
         user.addMessageToQueue(message);
     }
 
+
     //TMP
     public Map<SelectionKey, User> getUsers() {
-        return users;
+        return _users();
     }
 
-    public List<String> getUsersMessageQueue(SelectionKey key) {
-        return users.get(key).getInboundMessageQueue();
-    }
 }

@@ -45,7 +45,7 @@ public class Client extends Thread {
             //NOP
         }
         finally {
-            closeInvolvedResources();
+            closeResourcesIgnoringExceptions();
         }
     }
 
@@ -82,7 +82,7 @@ public class Client extends Thread {
         }
     }
 
-    private void closeInvolvedResources() {
+    private void closeResourcesIgnoringExceptions() {
         try {
             if (in != null)
                 in.close();
@@ -92,9 +92,7 @@ public class Client extends Thread {
                 stdin.close();
             if (socket != null)
                 socket.close();
-        } catch (Throwable t) {
-            //NOP
-        }
+        } catch (Throwable ignore) {/*NOP*/}
     }
     
     private boolean connectionEstablished() {

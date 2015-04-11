@@ -4,6 +4,10 @@ public class Utils {
 
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
+    public static String addLineSeparator(String message) {
+        return message + LINE_SEPARATOR;
+    }
+
     public static String implodeStringArray(String[] pieces, String glue) {
         String result = "";
 

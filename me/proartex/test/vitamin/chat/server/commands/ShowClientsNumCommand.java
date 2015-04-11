@@ -1,34 +1,32 @@
 package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.server.Server;
+import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
 
 import java.nio.channels.SelectionKey;
 
 public class ShowClientsNumCommand implements Executable, Validatable {
 
-    private Server server;
+    private ServerCommandHandler handler;
     private SelectionKey key;
 
-    public ShowClientsNumCommand(Server server, SelectionKey key) {
-        this.server = server;
+    public ShowClientsNumCommand(ServerCommandHandler handler, SelectionKey key) {
+        this.handler = handler;
         this.key = key;
     }
 
     @Override
     public void execute() {
         if (!isValidCommand()) {
-            server.sendMessageToUser(MsgConst.INVALID_CLIENT_NUM_COMMAND, key);
+            handler.sendMessageToUser(MsgConst.INVALID_CLIENT_NUM_COMMAND, key);
             return;
         }
 
-        int total = server.getUsers().count();
-        String message = MsgConst.TOTAL_USERS_PREFIX + String.valueOf(total);
-        server.sendMessageToUser(message, key);
+        handler.sendRegisteredCountToUser(key);
     }
 
     @Override
     public boolean isValidCommand() {
-        return server.getUsers().containsUserWith(key);
+        return handler.isInRegisteredUserGroup(key);
     }
 }
