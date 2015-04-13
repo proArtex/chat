@@ -77,7 +77,7 @@ public class ServerCommandHandler implements CommandHandler {
     public void sendAvailableCommandsToUser(SelectionKey key) {
         String[] commands = new String[] {
                 "/exit - leave the chat",
-                "/total - show number of _users in chat",
+                "/total - show number of users in chat",
         };
 
         String message = Utils.implodeStringArray(commands, Utils.LINE_SEPARATOR);

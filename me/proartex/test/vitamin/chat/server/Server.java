@@ -2,10 +2,8 @@ package me.proartex.test.vitamin.chat.server;
 
 import me.proartex.test.vitamin.chat.Utils;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
-import me.proartex.test.vitamin.chat.server.commands.Executable;
-import me.proartex.test.vitamin.chat.server.exceptions.ReadException;
-import me.proartex.test.vitamin.chat.server.exceptions.ServerException;
-import me.proartex.test.vitamin.chat.server.exceptions.WriteException;
+import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.exceptions.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -19,8 +17,8 @@ import java.util.*;
  */
 public class Server implements Runnable {
 
-    public static String DEFAULT_HOST = "localhost";
-    public static int DEFAULT_PORT    = 9993;
+    public static final String DEFAULT_HOST = "localhost";
+    public static final int DEFAULT_PORT    = 9993;
     private volatile Thread serverThread;
     private Session session;
     private RegisteredGroup registeredUsers;
@@ -35,18 +33,13 @@ public class Server implements Runnable {
         this(DEFAULT_HOST, DEFAULT_PORT);
     }
 
-    public Server(String host, int port) throws ServerException {
-        try {
-            session            = new Session();
-            registeredUsers    = new RegisteredGroup();
-            notRegisteredUsers = new NotRegisteredGroup();
-            commandHandler     = new ServerCommandHandler(this, session, registeredUsers, notRegisteredUsers);
-            socketAddress      = new InetSocketAddress(host, port);
-            buffer             = ByteBuffer.allocate(512);
-        }
-        catch (Throwable t) {
-            throw new ServerException("Server initialization failed: " + t.getMessage());
-        }
+    public Server(String host, int port) {
+        session            = new Session();
+        registeredUsers    = new RegisteredGroup();
+        notRegisteredUsers = new NotRegisteredGroup();
+        commandHandler     = new ServerCommandHandler(this, session, registeredUsers, notRegisteredUsers);
+        socketAddress      = new InetSocketAddress(host, port);
+        buffer             = ByteBuffer.allocate(512);
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -117,10 +110,8 @@ public class Server implements Runnable {
                 break;
             }
 
-            registeredUsers.removeUsersWithClosedConnection();
-            notRegisteredUsers.removeUsersWithClosedConnection();
-            switchUserOperations(registeredUsers);
-            switchUserOperations(notRegisteredUsers);
+            removeUsersWithClosedConnection();
+            switchUserOperations();
             processSession();
         }
 
@@ -162,7 +153,7 @@ public class Server implements Runnable {
         notRegisteredUsers.add(key, new User());
     }
 
-    private String readFromChannelOf(SelectionKey key) throws IOException {
+    private String readFromChannelOf(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
         StringBuilder context = new StringBuilder();
@@ -187,7 +178,7 @@ public class Server implements Runnable {
         return context.toString();
     }
 
-    private void writeToChannelOf(SelectionKey key) throws IOException {
+    private void writeToChannelOf(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
         UserGroup userGroup = getClientGroup(key);
@@ -207,6 +198,16 @@ public class Server implements Runnable {
             cancelKey(key);
             throw new WriteException();
         }
+    }
+
+    private void removeUsersWithClosedConnection() {
+        registeredUsers.removeUsersWithClosedConnection();
+        notRegisteredUsers.removeUsersWithClosedConnection();
+    }
+
+    private void switchUserOperations() {
+        switchUserOperations(registeredUsers);
+        switchUserOperations(notRegisteredUsers);
     }
 
     private void switchUserOperations(UserGroup userGroup) {

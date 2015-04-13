@@ -7,7 +7,11 @@ import java.io.IOException;
 
 public class Receiver extends Thread {
 
-    private BufferedReader in;
+    private BufferedReader inStream;
+
+    Receiver( BufferedReader inStream) {
+        this.inStream = inStream;
+    }
 
     @Override
     public void run() {
@@ -24,13 +28,13 @@ public class Receiver extends Thread {
     }
 
     void setIn(BufferedReader in) {
-        this.in = in;
+        this.inStream = in;
     }
 
     private void tryToReadAndPrintMessageFromServer() throws IOException {
         String line;
 
-        while ((line = in.readLine()) != null && !MsgConst.BYE_BYE.equals(line)) {
+        while ((line = inStream.readLine()) != null && !MsgConst.BYE_BYE.equals(line)) {
             System.out.println(line);
         }
     }

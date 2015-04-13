@@ -1,6 +1,7 @@
 package me.proartex.test.vitamin.chat.client;
 
-import me.proartex.test.vitamin.chat.client.commands.*;
+import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.commands.*;
 
 public class ClientCommandFactory {
 
@@ -28,7 +29,7 @@ public class ClientCommandFactory {
                 return new ExitCommand();
 
             default:
-                return new UnknownCommand();
+                return new UnknownCommand(context);
         }
     }
 

@@ -2,7 +2,7 @@ package me.proartex.test.vitamin.chat.client;
 
 import me.proartex.test.vitamin.chat.MsgConst;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
-import me.proartex.test.vitamin.chat.client.commands.Serializable;
+import me.proartex.test.vitamin.chat.commands.Serializable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,24 +13,39 @@ import java.net.UnknownHostException;
 
 public class Client extends Thread {
 
-    private String host        = "127.0.0.1";
-//    private final String host  = "proartex.me";
-    private int port           = 9993;
-    private int maxTries       = 10;
-    private int tries          = 0;
+    public static final String DEFAULT_HOST = "proartex.me";
+    public static final int DEFAULT_PORT    = 9993;
+    private int maxConnectTries             = 10;
+    private int curConnectTries;
     private Receiver receiver;
-    private Socket socket;
-    private PrintWriter out;
+    private String host;
+    private int port;
     private BufferedReader stdin;
     private BufferedReader in;
+    private PrintWriter out;
+    private Socket socket;
 
-    public Client(Receiver receiver) {
-        this.receiver = receiver;
+    public Client() {
+        this(DEFAULT_HOST, DEFAULT_PORT);
+    }
+
+    public Client(String host, int port) {
+        this.host = host;
+        this.port = port;
     }
 
     public static void main(String[] args) {
-        new Client(new Receiver()).start();
+        Client client =  new Client("localhost", 9993);
+        client.start();
     }
+
+//    public void start() {
+////        init()
+//    }
+//
+//    public void stop() {
+//
+//    }
 
     @Override
     public void run() {
@@ -49,14 +64,14 @@ public class Client extends Thread {
         }
     }
 
-    public void connectToServer() throws ClientException {
+    public void connectToServer() {
         if (!connectionEstablished()) {
             System.out.println(MsgConst.CONNECTION_FAIL);
             throw new ClientException();
         }
     }
 
-    private void registerUser() throws ClientException {
+    private void registerUser() {
         if (!registeredUser()) {
             System.out.println(MsgConst.CONNECTION_FAIL);
             throw new ClientException();
@@ -72,7 +87,7 @@ public class Client extends Thread {
         receiver.start();
     }
 
-    private void readAndSendUserMessage() throws ClientException {
+    private void readAndSendUserMessage() {
         try {
             tryToReadAndSendUserMessage();
         }
@@ -97,14 +112,14 @@ public class Client extends Thread {
     
     private boolean connectionEstablished() {
         try {
-            tryToConnect();
+            init();
             return true;
         }
         catch (UnknownHostException e) {
             return false;
         }
         catch (IOException e) {
-            if (++tries < maxTries)
+            if (++curConnectTries < maxConnectTries)
                 return connectionEstablished();
         }
         
@@ -120,15 +135,16 @@ public class Client extends Thread {
         }
     }
 
-    private void tryToConnect() throws IOException {
-        socket = new Socket(host, port);
-        out    = new PrintWriter(socket.getOutputStream(), true);
-        in     = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    private void init() throws IOException {
+        socket   = new Socket(host, port);
+        out      = new PrintWriter(socket.getOutputStream(), true);
+        in       = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        stdin    = new BufferedReader(new InputStreamReader(System.in));
+        receiver = new Receiver(in);
     }
 
     private boolean tryToRegister() throws IOException {
         String response = null;
-        stdin = new BufferedReader(new InputStreamReader(System.in));
 
         System.out.println(MsgConst.ASK_FOR_USERNAME);
 
@@ -155,8 +171,9 @@ public class Client extends Thread {
             sendMessage(myMessage);
 
             //костылище для теста: в отсутствие System.exit() - уходим так
-            if ("/exit".equals(myMessage))
+            if ("/exit".equals(myMessage)) {
                 break;
+            }
         }
     }
 

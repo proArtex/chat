@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.client.commands;
+package me.proartex.test.vitamin.chat.commands;
 
 /*
     Marker

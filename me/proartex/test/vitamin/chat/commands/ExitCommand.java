@@ -1,19 +1,20 @@
-package me.proartex.test.vitamin.chat.server.commands;
+package me.proartex.test.vitamin.chat.commands;
 
+import me.proartex.test.vitamin.chat.Command;
 import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.server.Message;
-import me.proartex.test.vitamin.chat.server.Server;
 import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
 
 import java.nio.channels.SelectionKey;
-import java.util.List;
 
-public class ShowMessageHistoryCommand implements Executable, Validatable {
+public class ExitCommand implements Executable, Validatable, Serializable {
 
+    public static final int id = Command.EXIT;
     private ServerCommandHandler handler;
     private SelectionKey key;
 
-    public ShowMessageHistoryCommand(ServerCommandHandler handler, SelectionKey key) {
+    public ExitCommand() {}
+
+    public ExitCommand(ServerCommandHandler handler, SelectionKey key) {
         this.handler = handler;
         this.key = key;
     }
@@ -21,11 +22,11 @@ public class ShowMessageHistoryCommand implements Executable, Validatable {
     @Override
     public void execute() {
         if (!isValidCommand()) {
-            handler.sendMessageToUser(MsgConst.INVALID_MESSAGE_HISTORY_COMMAND, key);
+            handler.sendMessageToUser(MsgConst.INVALID_EXIT_COMMAND, key);
             return;
         }
 
-        handler.sendMessageHistoryToUser(key);
+        handler.dropUser(key);
     }
 
     @Override

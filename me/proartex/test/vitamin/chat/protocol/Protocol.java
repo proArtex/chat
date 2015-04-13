@@ -1,25 +1,29 @@
 package me.proartex.test.vitamin.chat.protocol;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.client.commands.Serializable;
-import me.proartex.test.vitamin.chat.server.Server;
+import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.exceptions.SerializeException;
 import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
-import me.proartex.test.vitamin.chat.server.commands.Executable;
-import me.proartex.test.vitamin.chat.server.commands.*;
+import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.commands.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Protocol {
 
     private static final String COMMAND_DELIMITER   = "<SYS_COMMAND>";
     private static final String ARGUMENTS_DELIMITER = ";";
     private static final String VALUE_DELIMITER     = "=";
+    private static final List<String> FORBIDDEN_FIELDS;
+
+    static {
+        FORBIDDEN_FIELDS = new ArrayList<>();
+        FORBIDDEN_FIELDS.add("handler");
+        FORBIDDEN_FIELDS.add("key");
+    }
 
     public static String serialize(Serializable command) {
         try {
@@ -36,6 +40,10 @@ public class Protocol {
         Class cl = command.getClass();
 
         for (Field field : cl.getDeclaredFields()) {
+            String name = field.getName();
+            if (isForbidden(name))
+                continue;
+
             field.setAccessible(true);
             serializedCommand
                     .append(field.getName())
@@ -66,6 +74,10 @@ public class Protocol {
         }
 
         return executableCommands;
+    }
+
+    private static boolean isForbidden(String name) {
+        return FORBIDDEN_FIELDS.contains(name);
     }
 
     private static String arrayFieldOfCommandToString(Field field, Serializable command) throws ClassNotFoundException, IllegalAccessException {
@@ -143,11 +155,12 @@ public class Protocol {
     private static void setParamsToCommand(HashMap<String, String> params, Executable command) {
         Class<?> commandClass = command.getClass();
 
-        //TODO: excludes server/key;
-
         for (Map.Entry<String, String> pair : params.entrySet()) {
             String name = pair.getKey();
             String value = pair.getValue();
+
+            if (isForbidden(name))
+                continue;
 
             try {
                 Field field = commandClass.getDeclaredField(name);

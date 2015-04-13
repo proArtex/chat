@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.server.exceptions;
+package me.proartex.test.vitamin.chat.exceptions;
 
 
 public class ServerException extends RuntimeException {
