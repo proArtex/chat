@@ -1,6 +1,8 @@
 package me.proartex.test.vitamin.chat.server;
 
 import me.proartex.test.vitamin.chat.Utils;
+import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.commands.ServerCommand;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 import me.proartex.test.vitamin.chat.commands.Executable;
 import me.proartex.test.vitamin.chat.exceptions.*;
@@ -64,6 +66,9 @@ public class Server implements Runnable {
 
     public void stop() throws ServerException {
         try {
+            if (serverThread == null)
+                return;
+
             serverThread.interrupt();
             while (serverThread.isAlive()) {
                 Thread.sleep(500);
@@ -183,13 +188,14 @@ public class Server implements Runnable {
 
         UserGroup userGroup = getClientGroup(key);
         User user = userGroup.getUserWith(key);
-        List<String> messageQueue = user.getInboundMessageQueue();
+        List<Executable> commandQueue = user.getOutboundCommandQueue();
 
         try {
-            Iterator<String> iterator = messageQueue.iterator();
+            Iterator<Executable> iterator = commandQueue.iterator();
             while (iterator.hasNext()) {
-                String message = Utils.addLineSeparator(iterator.next());
-                ByteBuffer bufferedMessage = ByteBuffer.wrap(message.getBytes());
+                String command = Protocol.serialize((Serializable) iterator.next());
+                command = Utils.addLineSeparator(command);
+                ByteBuffer bufferedMessage = ByteBuffer.wrap(command.getBytes());
                 socketChannel.write(bufferedMessage);
                 iterator.remove();
             }
@@ -215,7 +221,7 @@ public class Server implements Runnable {
             SelectionKey key = pair.getKey();
             User user = pair.getValue();
 
-            if (user.getInboundMessageQueue().size() > 0) {
+            if (user.getOutboundCommandQueue().size() > 0) {
                 key.interestOps(SelectionKey.OP_WRITE);
             }
             else {
@@ -234,9 +240,11 @@ public class Server implements Runnable {
     }
 
     private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
-        ArrayList<Executable> commands = Protocol.deserialize(serializedCommands, commandHandler, key);
+        List<Executable> commands = Protocol.deserialize(serializedCommands);
 //        System.out.println("found commands: "+ commands);
         for (Executable command : commands) {
+            ((ServerCommand) command).setHandler(commandHandler);
+            ((ServerCommand) command).setSelectionKey(key);
             command.execute();
         }
     }

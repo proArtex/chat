@@ -1,7 +1,7 @@
 package me.proartex.test.vitamin.chat.tests.load;
 
 import me.proartex.test.vitamin.chat.client.Client;
-import me.proartex.test.vitamin.chat.client.Receiver;
+//import me.proartex.test.vitamin.chat.client.Receiver;
 
 import java.util.Random;
 

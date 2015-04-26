@@ -23,9 +23,9 @@ public class ClientThread extends Thread {
         long lifeTime = LoadTesting.randomInRange(100000, 100000);
 
         try {
-            client.connectToServer();
-            client.showMessageHistoryToUser();
-            client.runIncomingMessageListener();
+            client.start();
+            client.showMessageHistoryToUser(); //TODO: before register?
+//            client.runInboundMessageListener();
 
             client.sendMessage("/register User" + userNum);
 

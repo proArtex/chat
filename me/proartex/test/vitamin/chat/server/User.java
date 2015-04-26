@@ -1,30 +1,30 @@
 package me.proartex.test.vitamin.chat.server;
 
+import me.proartex.test.vitamin.chat.commands.Executable;
+
 import java.util.LinkedList;
+import java.util.List;
 
 public class User {
 
-//    public static int OP_READ  = SelectionKey.OP_READ;
-//    public static int OP_WRITE = SelectionKey.OP_WRITE;
-//    private SelectionKey key;
     private String username;
-    private LinkedList<String> inboundMessageQueue = new LinkedList<>();
+//    private List<String> inboundMessageQueue = new LinkedList<>();
+    private List<Executable> outboundCommandQueue = new LinkedList<>();
 
-    public void addMessageToQueue(String message) {
-        inboundMessageQueue.add(message);
-    }
+//    public void addMessageToQueue(String message) {
+//        inboundMessageQueue.add(message);
+//    }
 
-
-    public void changeStateTo() {
-//        SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ);
+    public void addCommandToQueue(Executable command) {
+        outboundCommandQueue.add(command);
     }
 
     public String getUsername() {
         return username;
     }
 
-    public LinkedList<String> getInboundMessageQueue() {
-        return inboundMessageQueue;
+    public List<Executable> getOutboundCommandQueue() {
+        return outboundCommandQueue;
     }
 
     public void setUsername(String username) {

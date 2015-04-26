@@ -2,18 +2,18 @@ package me.proartex.test.vitamin.chat.protocol;
 
 import me.proartex.test.vitamin.chat.Command;
 import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.commands2.*;
 import me.proartex.test.vitamin.chat.exceptions.SerializeException;
-import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
 import me.proartex.test.vitamin.chat.commands.Executable;
 import me.proartex.test.vitamin.chat.commands.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.nio.channels.SelectionKey;
 import java.util.*;
 
 public class Protocol {
 
+    public  static final String RESPONSE_DELIMITER   = "<@rd>";
     private static final String COMMAND_DELIMITER   = "<SYS_COMMAND>";
     private static final String ARGUMENTS_DELIMITER = ";";
     private static final String VALUE_DELIMITER     = "=";
@@ -23,6 +23,7 @@ public class Protocol {
         FORBIDDEN_FIELDS = new ArrayList<>();
         FORBIDDEN_FIELDS.add("handler");
         FORBIDDEN_FIELDS.add("key");
+        FORBIDDEN_FIELDS.add("client");
     }
 
     public static String serialize(Serializable command) {
@@ -35,6 +36,7 @@ public class Protocol {
         }
     }
 
+    //TODO: split, using Utils
     private static String tryToSerialize(Serializable command) throws IllegalAccessException, ClassNotFoundException {
         StringBuilder serializedCommand = new StringBuilder(COMMAND_DELIMITER);
         Class cl = command.getClass();
@@ -57,7 +59,7 @@ public class Protocol {
         return serializedCommand.toString();
     }
 
-    public static ArrayList<Executable> deserialize(String serializedCommands, ServerCommandHandler commandHandler, SelectionKey key) {
+    public static ArrayList<Executable> deserialize(String serializedCommands) {
         ArrayList<Executable> executableCommands = new ArrayList<>();
 
         for (String stringCommand : serializedCommands.split(COMMAND_DELIMITER)) {
@@ -67,7 +69,13 @@ public class Protocol {
 
             HashMap<String, String> params = getParamsOf(stringCommand);
             int id = shiftIdFrom(params);
-            Executable command = getCommandFor(id, commandHandler, key);
+
+            if (id == Command.INVALID) {
+                executableCommands.add(new InvalidCommand());
+                continue;
+            }
+
+            Executable command = getCommandFor(id);
             setParamsToCommand(params, command);
 
             executableCommands.add(command);
@@ -87,6 +95,7 @@ public class Protocol {
         return Arrays.asList(array).toString();
     }
 
+    //TODO: utils
     private static Object[] castObjectToArray(Object array) {
         Object[] castedArray = new Object[Array.getLength(array)];
 
@@ -127,28 +136,46 @@ public class Protocol {
     }
 
     //TODO: server factory
-    private static Executable getCommandFor(int id, ServerCommandHandler commandHandler, SelectionKey key) {
+    private static Executable getCommandFor(int id) {
         switch (id) {
             case Command.REGISTER:
-                return new RegisterUserCommand(commandHandler, key);
+                return new RegisterUserCommand();
 
             case Command.MESSAGE:
-                return new SendMessageCommand(commandHandler, key);
+                return new SendMessageCommand();
 
             case Command.HISTORY:
-                return new ShowMessageHistoryCommand(commandHandler, key);
+                return new ShowMessageHistoryCommand();
 
             case Command.COMMANDS:
-                return new ShowCommandListCommand(commandHandler, key);
+                return new ShowCommandListCommand();
 
             case Command.TOTAL:
-                return new ShowClientsNumCommand(commandHandler, key);
+                return new ShowClientsNumCommand();
 
             case Command.EXIT:
-                return new ExitCommand(commandHandler, key);
+                return new ExitCommand();
+
+            case Command.INVALID:
+                return new InvalidCommand();
+
+            case Command.ACCEPT:
+                return new AcceptCommand();
+
+            case Command.INVALID_NAME:
+                return new InvalidUsernameCommand();
+
+            case Command.TAKEN_NAME:
+                return new TakenUsernameCommand();
+
+            case Command.SYSTEM_MESSAGE:
+                return new SystemMessageCommand();
+
+            case Command.USER_MESSAGE:
+                return new UserMessageCommand();
 
             default:
-                return new UnknownCommand(commandHandler, key);
+                return new UnknownCommand();
         }
     }
 

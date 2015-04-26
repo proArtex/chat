@@ -1,6 +1,9 @@
 package me.proartex.test.vitamin.chat.server;
 
 import me.proartex.test.vitamin.chat.MsgConst;
+import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.commands2.SystemMessageCommand;
+import me.proartex.test.vitamin.chat.commands2.UserMessageCommand;
 
 import java.nio.channels.SelectionKey;
 import java.util.HashMap;
@@ -20,9 +23,9 @@ public class RegisteredGroup extends UserGroup {
         return _users;
     }
 
-    public void notifyAllUsers(String message) {
+    public void addCommandToAllUsers(Executable command) {
         for (User user : _users.values()) {
-            _sendMessageToUser(message, user);
+            _sendCommandToUser(command, user);
         }
     }
 
@@ -48,9 +51,11 @@ public class RegisteredGroup extends UserGroup {
             if (!key.isValid()) {
                 String username = user.getUsername();
                 String message = username + MsgConst.USER_LEFT_POSTFIX;
+                Executable messageCommand = new SystemMessageCommand(message);
+                addCommandToAllUsers(messageCommand);
+
                 iterator.remove();
 
-                notifyAllUsers(message);
                 //TODO: server event listener
                 System.out.println(username + " sign out. Total: " + count());
             }

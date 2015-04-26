@@ -1,5 +1,7 @@
 package me.proartex.test.vitamin.chat;
 
+import java.util.regex.Pattern;
+
 public class Utils {
 
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
@@ -18,5 +20,9 @@ public class Utils {
         }
 
         return result;
+    }
+
+    public static String[] explodeString(String context, String delimiter) {
+        return context.split(Pattern.quote(delimiter));
     }
 }

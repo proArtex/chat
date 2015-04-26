@@ -1,22 +1,27 @@
 package me.proartex.test.vitamin.chat.client;
 
 import me.proartex.test.vitamin.chat.MsgConst;
+import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.commands2.ClientCommand;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 import me.proartex.test.vitamin.chat.commands.Serializable;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 
-public class Client extends Thread {
+public class Client implements Runnable {
 
     public static final String DEFAULT_HOST = "proartex.me";
     public static final int DEFAULT_PORT    = 9993;
     private int maxConnectTries             = 10;
     private int curConnectTries;
+
+    private boolean isRegistered;
+//    private boolean isConnected;
+
+    private volatile Thread clientThread;
     private Receiver receiver;
     private String host;
     private int port;
@@ -32,68 +37,106 @@ public class Client extends Thread {
     public Client(String host, int port) {
         this.host = host;
         this.port = port;
+        receiver = new Receiver(this);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Client client =  new Client("localhost", 9993);
         client.start();
     }
 
-//    public void start() {
-////        init()
-//    }
-//
-//    public void stop() {
-//
-//    }
+    public void start() throws ClientException {
+        connectToServer();
+        clientThread = new Thread(this);
+        clientThread.start();
+    }
+
+    public void stop() throws ClientException {
+//        clientThread.interrupt();
+        throw new UnsupportedOperationException("blocking-read() interrupting impossible");
+    }
+
+    public void setRegistered(boolean isRegistered) {
+        this.isRegistered = isRegistered;
+    }
+
+    public void print(String message) {
+        System.out.println(message);
+    }
 
     @Override
     public void run() {
         try {
-            connectToServer();
             registerUser();
+            runInboundMessageListener(); //TODO: do not listen until history shown (put logic into register command?)
             showMessageHistoryToUser();
-            runIncomingMessageListener();
-            readAndSendUserMessage();
+            readAndSendUserMessageInLoop();
         }
         catch (ClientException e) {
-            //NOP
+            print(e.getMessage());
         }
         finally {
             closeResourcesIgnoringExceptions();
         }
     }
 
-    public void connectToServer() {
-        if (!connectionEstablished()) {
-            System.out.println(MsgConst.CONNECTION_FAIL);
-            throw new ClientException();
+    public void registerUser() {
+        try {
+            tryToRegister();
+        }
+        catch (IOException e) {
+            throw new ClientException(MsgConst.CONNECTION_CLOSED);
         }
     }
 
-    private void registerUser() {
-        if (!registeredUser()) {
-            System.out.println(MsgConst.CONNECTION_FAIL);
-            throw new ClientException();
-        }
+    public void sendMessage(String context) {
+        Serializable command = ClientCommandFactory.getInstanceFor(context);
+        String serializedCommand = Protocol.serialize(command);
+        send(serializedCommand);
     }
 
     public void showMessageHistoryToUser() {
         sendMessage("/history");
     }
 
-    public void runIncomingMessageListener() {
-        receiver.setIn(in);
-        receiver.start();
+    public void runInboundMessageListener() {
+//        receiver.setIn(in);
+        new Thread(receiver).start();
     }
 
-    private void readAndSendUserMessage() {
+    private void connectToServer() {
+        while (++curConnectTries < maxConnectTries) {
+            try {
+                initializeResources();
+                return;
+            }
+            catch (UnknownHostException e) {
+                break;
+            }
+            catch (IOException ignore) {
+                /*NOP*/
+            }
+            catch (Throwable t) {
+                break;
+            }
+        }
+
+        throw new ClientException(MsgConst.CONNECTION_FAIL);
+    }
+
+    private void initializeResources() throws IOException {
+        socket = new Socket(host, port);
+        out    = new PrintWriter(socket.getOutputStream(), true);
+        in     = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        stdin  = new BufferedReader(new InputStreamReader(System.in));
+    }
+
+    private void readAndSendUserMessageInLoop() {
         try {
-            tryToReadAndSendUserMessage();
+            tryToReadAndSendUserMessageInLoop();
         }
         catch (IOException e) {
-            System.out.println(MsgConst.CONNECTION_CLOSED);
-            throw new ClientException();
+            throw new ClientException(MsgConst.CONNECTION_CLOSED);
         }
     }
 
@@ -107,96 +150,62 @@ public class Client extends Thread {
                 stdin.close();
             if (socket != null)
                 socket.close();
-        } catch (Throwable ignore) {/*NOP*/}
-    }
-    
-    private boolean connectionEstablished() {
-        try {
-            init();
-            return true;
         }
-        catch (UnknownHostException e) {
-            return false;
-        }
-        catch (IOException e) {
-            if (++curConnectTries < maxConnectTries)
-                return connectionEstablished();
-        }
-        
-        return false;
-    }
-    
-    private boolean registeredUser() {
-        try {
-            return tryToRegister();
-        }
-        catch (IOException e) {
-            return false;
-        }
+        catch (Throwable ignore) {/*NOP*/}
     }
 
-    private void init() throws IOException {
-        socket   = new Socket(host, port);
-        out      = new PrintWriter(socket.getOutputStream(), true);
-        in       = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        stdin    = new BufferedReader(new InputStreamReader(System.in));
-        receiver = new Receiver(in);
-    }
-
-    private boolean tryToRegister() throws IOException {
-        String response = null;
-
-        System.out.println(MsgConst.ASK_FOR_USERNAME);
+    private void tryToRegister() throws IOException {
+        String response;
+        print(MsgConst.ASK_FOR_USERNAME);
 
         do {
-            if (response != null)
-                System.out.println(response);
+            String username = readFromConsole();
 
-            String userName = readUntilUsernameIsValid();
-            sendMessage("/register " + userName);
+            //read while stopping? wtf
+//            if (username == null)
+//                System.exit(-1);
+
+            sendMessage("/register " + username);
+            response = readFromSocketChannel();
+            deserializeAndExecute(response);
         }
-        while (!MsgConst.REGISTER_SUCCESS.equals(response = in.readLine()) && response != null);
+        while (!clientThread.isInterrupted() && response != null && !isRegistered);
 
         if (response == null)
-            return false;
-
-        System.out.println(response);
-        return true;
+            throw new ClientException(MsgConst.CONNECTION_CLOSED);
     }
 
-    private void tryToReadAndSendUserMessage() throws IOException {
-        String myMessage;
+    private void tryToReadAndSendUserMessageInLoop() throws IOException {
+        String message;
 
-        while ((myMessage = stdin.readLine()) != null) {
-            sendMessage(myMessage);
+        while (!clientThread.isInterrupted() && (message = readFromConsole()) != null) {
+            sendMessage(message);
 
-            //костылище для теста: в отсутствие System.exit() - уходим так
-            if ("/exit".equals(myMessage)) {
+            //TODO const?
+            if ("/exit".equals(message))
                 break;
-            }
         }
-    }
-
-    public void sendMessage(String context) {
-        Serializable command = ClientCommandFactory.getInstanceFor(context);
-        String serializedCommand = Protocol.serialize(command);
-        send(serializedCommand);
-    }
-
-    private String readUntilUsernameIsValid() throws IOException {
-        String userName;
-
-        while ((userName = stdin.readLine()) != null && !isValidUserName(userName)) {
-            System.out.println(MsgConst.INVALID_USERNAME);
-        }
-        return userName;
-    }
-
-    private static boolean isValidUserName(String userName) {
-        return userName.matches("[A-z0-9_]+");
     }
 
     private void send(String serializedCommand) {
         out.println(serializedCommand);
+    }
+
+    private String readFromConsole() throws IOException {
+        return stdin.readLine();
+    }
+
+    void deserializeAndExecute(String serializedCommands) {
+        System.out.println("serialized: " + serializedCommands);
+        List<Executable> commands = Protocol.deserialize(serializedCommands);
+
+        for (Executable command : commands) {
+            ((ClientCommand) command).setClient(this);
+            command.execute();
+        }
+    }
+
+    String readFromSocketChannel() throws IOException {
+        return in.readLine();
     }
 }

@@ -2,24 +2,23 @@ package me.proartex.test.vitamin.chat.client;
 
 import me.proartex.test.vitamin.chat.MsgConst;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 
-public class Receiver extends Thread {
+public class Receiver implements Runnable {
 
-    private BufferedReader inStream;
+    private volatile Client client;
 
-    Receiver( BufferedReader inStream) {
-        this.inStream = inStream;
+    public Receiver(Client client) {
+        this.client = client;
     }
 
     @Override
     public void run() {
         try {
-            tryToReadAndPrintMessageFromServer();
+            tryToReadAndPrintServerResponseInLoop();
         }
-        catch (IOException e) {
-            e.printStackTrace();
+        catch (IOException ignore) {
+            //NOP
         }
         finally {
             System.out.println(MsgConst.CONNECTION_CLOSED);
@@ -27,15 +26,11 @@ public class Receiver extends Thread {
         }
     }
 
-    void setIn(BufferedReader in) {
-        this.inStream = in;
-    }
+    private void tryToReadAndPrintServerResponseInLoop() throws IOException {
+        String response;
 
-    private void tryToReadAndPrintMessageFromServer() throws IOException {
-        String line;
-
-        while ((line = inStream.readLine()) != null && !MsgConst.BYE_BYE.equals(line)) {
-            System.out.println(line);
+        while ((response = client.readFromSocketChannel()) != null && !MsgConst.BYE_BYE.equals(response)) {
+            client.deserializeAndExecute(response);
         }
     }
 }

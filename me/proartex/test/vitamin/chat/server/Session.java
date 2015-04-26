@@ -8,7 +8,7 @@ public class Session {
 
     private long sessionId;
     private int messageHistoryLimit = 100;
-    private List<Message> messageHistory;
+    private List<HistoryMessage> messageHistory;
 
     public Session() {
         messageHistory = new LinkedList<>();
@@ -29,7 +29,7 @@ public class Session {
         return sessionId != 0;
     }
 
-    public void noteMessage(Message message) {
+    public void noteMessage(HistoryMessage message) {
         if (limitIsReached())
             messageHistory.remove(0);
 
