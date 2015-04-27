@@ -1,10 +1,12 @@
 package me.proartex.test.vitamin.chat.client;
 
-import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.commands.Executable;
-import me.proartex.test.vitamin.chat.commands2.ClientCommand;
+import me.proartex.test.vitamin.chat.CommandPlacement;
+import me.proartex.test.vitamin.chat.TextConst;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.client.commands.ClientCommand;
+import me.proartex.test.vitamin.chat.client.exceptions.ClientException;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
-import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.Serializable;
 
 import java.io.*;
 import java.net.Socket;
@@ -19,14 +21,13 @@ public class Client implements Runnable {
     private int curConnectTries;
 
     private boolean isRegistered;
-//    private boolean isConnected;
 
     private volatile Thread clientThread;
     private Receiver receiver;
     private String host;
     private int port;
     private BufferedReader stdin;
-    private BufferedReader in;
+    private BufferedReader in; //TODO: volatile?
     private PrintWriter out;
     private Socket socket;
 
@@ -37,7 +38,7 @@ public class Client implements Runnable {
     public Client(String host, int port) {
         this.host = host;
         this.port = port;
-        receiver = new Receiver(this);
+        receiver = new Receiver();
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -52,8 +53,8 @@ public class Client implements Runnable {
     }
 
     public void stop() throws ClientException {
-//        clientThread.interrupt();
-        throw new UnsupportedOperationException("blocking-read() interrupting impossible");
+        clientThread.interrupt();
+//        throw new UnsupportedOperationException("blocking-read() interrupting impossible");
     }
 
     public void setRegistered(boolean isRegistered) {
@@ -85,7 +86,7 @@ public class Client implements Runnable {
             tryToRegister();
         }
         catch (IOException e) {
-            throw new ClientException(MsgConst.CONNECTION_CLOSED);
+            throw new ClientException(TextConst.CONNECTION_CLOSED);
         }
     }
 
@@ -121,7 +122,7 @@ public class Client implements Runnable {
             }
         }
 
-        throw new ClientException(MsgConst.CONNECTION_FAIL);
+        throw new ClientException(TextConst.CONNECTION_FAIL);
     }
 
     private void initializeResources() throws IOException {
@@ -136,7 +137,7 @@ public class Client implements Runnable {
             tryToReadAndSendUserMessageInLoop();
         }
         catch (IOException e) {
-            throw new ClientException(MsgConst.CONNECTION_CLOSED);
+            throw new ClientException(TextConst.CONNECTION_CLOSED);
         }
     }
 
@@ -156,7 +157,7 @@ public class Client implements Runnable {
 
     private void tryToRegister() throws IOException {
         String response;
-        print(MsgConst.ASK_FOR_USERNAME);
+        print(TextConst.ASK_FOR_USERNAME);
 
         do {
             String username = readFromConsole();
@@ -172,7 +173,7 @@ public class Client implements Runnable {
         while (!clientThread.isInterrupted() && response != null && !isRegistered);
 
         if (response == null)
-            throw new ClientException(MsgConst.CONNECTION_CLOSED);
+            throw new ClientException(TextConst.CONNECTION_CLOSED);
     }
 
     private void tryToReadAndSendUserMessageInLoop() throws IOException {
@@ -195,9 +196,13 @@ public class Client implements Runnable {
         return stdin.readLine();
     }
 
+    //TODO: is already sync?
+    private String readFromSocketChannel() throws IOException {
+        return in.readLine();
+    }
+
     void deserializeAndExecute(String serializedCommands) {
-        System.out.println("serialized: " + serializedCommands);
-        List<Executable> commands = Protocol.deserialize(serializedCommands);
+        List<Executable> commands = Protocol.deserialize(serializedCommands, CommandPlacement.CLIENT);
 
         for (Executable command : commands) {
             ((ClientCommand) command).setClient(this);
@@ -205,7 +210,28 @@ public class Client implements Runnable {
         }
     }
 
-    String readFromSocketChannel() throws IOException {
-        return in.readLine();
+    private class Receiver implements Runnable {
+        @Override
+        public void run() {
+            try {
+                tryToReadAndPrintServerResponseInLoop();
+            }
+            catch (IOException ignore) {
+                //NOP
+            }
+            finally {
+//                System.exit(1);
+                clientThread.interrupt();
+                System.out.println(TextConst.CONNECTION_CLOSED);
+            }
+        }
+
+        private void tryToReadAndPrintServerResponseInLoop() throws IOException {
+            String response;
+
+            while (!clientThread.isInterrupted() && (response = readFromSocketChannel()) != null) {
+                deserializeAndExecute(response);
+            }
+        }
     }
 }

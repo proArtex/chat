@@ -13,10 +13,10 @@ public class HistoryMessage {
     private final String sender;
     private final String message;
 
-    public HistoryMessage(String sender, String message) {
-        this.date = new Date();
+    public HistoryMessage(String sender, String message, Date date) {
         this.sender = sender;
         this.message = message;
+        this.date = date;
     }
 
     @Override

@@ -32,8 +32,8 @@ public class ServerResponseTest extends Assert {
 
     @Test
     public void testForbiddenFieldsCommand() throws IOException {
-        String response = sendRequest("key=null;handler=null");
-        assertEquals("Unknown command 'null'", response);
+        String response = sendRequest("key@=null<@ad>handler@=null");
+        assertEquals("<@SYS_COMMAND>id@=10<@ad>message@=Unknown command 'null'<@ad>", response);
     }
 
     @Ignore
@@ -47,19 +47,19 @@ public class ServerResponseTest extends Assert {
     @Test
     public void testInvalidString() throws IOException {
         String response = sendRequest("abrakadabra=1;");
-        assertEquals("Unknown command 'null'", response);
+        assertEquals("<@SYS_COMMAND>id@=10<@ad>message@=Unknown command 'null'<@ad>", response);
     }
 
     @Test
     public void testUnknownCommand() throws IOException {
-        String response = sendRequest("id=0;context=/shutdown;");
-        assertEquals("Unknown command '/shutdown'", response);
+        String response = sendRequest("id=0<@ad>context@=/shutdown;");
+        assertEquals("<@SYS_COMMAND>id@=10<@ad>message@=Unknown command '/shutdown;'<@ad>", response);
     }
 
     @Test
     public void testRegisterInvalidCommand() throws IOException {
-        String response = sendRequest("id=2;username=null;");
-        assertEquals("Invalid 'register' command", response);
+        String response = sendRequest("id@=2<@ad>username@=null<@ad>");
+        assertEquals("<@SYS_COMMAND>id@=8<@ad>username@=null<@ad>", response);
     }
 
     private void connect() throws IOException {

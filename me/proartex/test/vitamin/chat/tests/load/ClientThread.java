@@ -1,7 +1,7 @@
 package me.proartex.test.vitamin.chat.tests.load;
 
 import me.proartex.test.vitamin.chat.client.Client;
-import me.proartex.test.vitamin.chat.client.ClientException;
+import me.proartex.test.vitamin.chat.client.exceptions.ClientException;
 
 import java.util.Date;
 

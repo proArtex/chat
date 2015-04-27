@@ -1,10 +1,11 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.commands2.SystemMessageCommand;
-import me.proartex.test.vitamin.chat.commands2.UserMessageCommand;
-import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.TextConst;
+import me.proartex.test.vitamin.chat.Serializable;
+import me.proartex.test.vitamin.chat.client.commands.SystemMessageCommand;
+import me.proartex.test.vitamin.chat.server.CommandHandler;
 import me.proartex.test.vitamin.chat.server.User;
 
 import java.nio.channels.SelectionKey;
@@ -12,7 +13,7 @@ import java.nio.channels.SelectionKey;
 public class UnknownCommand implements Executable, ServerCommand, Serializable {
 
     public static final int id = Command.UNKNOWN;
-    private ServerCommandHandler handler;
+    private CommandHandler handler;
     private SelectionKey key;
     private String context;
 
@@ -25,14 +26,14 @@ public class UnknownCommand implements Executable, ServerCommand, Serializable {
     @Override
     public void execute() {
         User user = handler.getUserWith(key);
+        String message = TextConst.UNKNOWN_COMMAND_PREFIX + "'" + context + "'";
 
-        String message = MsgConst.UNKNOWN_COMMAND_PREFIX + "'" + context + "'";
         Executable messageCommand = new SystemMessageCommand(message);
         handler.sendCommandToUser(messageCommand, user);
     }
 
     @Override
-    public void setHandler(ServerCommandHandler handler) {
+    public void setHandler(CommandHandler handler) {
         this.handler = handler;
     }
 

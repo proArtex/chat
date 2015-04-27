@@ -1,11 +1,9 @@
 package me.proartex.test.vitamin.chat.protocol;
 
-import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.commands.Serializable;
-import me.proartex.test.vitamin.chat.commands2.*;
-import me.proartex.test.vitamin.chat.exceptions.SerializeException;
-import me.proartex.test.vitamin.chat.commands.Executable;
-import me.proartex.test.vitamin.chat.commands.*;
+import me.proartex.test.vitamin.chat.*;
+import me.proartex.test.vitamin.chat.client.commands.*;
+import me.proartex.test.vitamin.chat.protocol.exceptions.SerializeException;
+import me.proartex.test.vitamin.chat.server.commands.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -13,10 +11,10 @@ import java.util.*;
 
 public class Protocol {
 
-    public  static final String RESPONSE_DELIMITER   = "<@rd>";
-    private static final String COMMAND_DELIMITER   = "<SYS_COMMAND>";
-    private static final String ARGUMENTS_DELIMITER = ";";
-    private static final String VALUE_DELIMITER     = "=";
+    public  static final String RESPONSE_DELIMITER  = "<@rd>";
+    private static final String COMMAND_DELIMITER   = "<@SYS_COMMAND>";
+    private static final String ARGUMENTS_DELIMITER = "<@ad>";
+    private static final String VALUE_DELIMITER     = "@=";
     private static final List<String> FORBIDDEN_FIELDS;
 
     static {
@@ -26,6 +24,7 @@ public class Protocol {
         FORBIDDEN_FIELDS.add("client");
     }
 
+    //TODO: cut exception?
     public static String serialize(Serializable command) {
         try {
             return tryToSerialize(command);
@@ -36,7 +35,26 @@ public class Protocol {
         }
     }
 
-    //TODO: split, using Utils
+    public static List<Executable> deserialize(String serializedCommands, CommandPlacement placement) {
+        List<Executable> executableCommands = new ArrayList<>();
+
+        for (String stringCommand : Utils.explodeString(serializedCommands, COMMAND_DELIMITER)) {
+            stringCommand = stringCommand.trim();
+
+            if (stringCommand.isEmpty())
+                continue;
+
+            HashMap<String, String> params = getParamsOf(stringCommand);
+            int id = shiftIdFrom(params);
+            Executable command = getCommandFor(placement, id);
+            setParamsToCommand(params, command);
+
+            executableCommands.add(command);
+        }
+
+        return executableCommands;
+    }
+
     private static String tryToSerialize(Serializable command) throws IllegalAccessException, ClassNotFoundException {
         StringBuilder serializedCommand = new StringBuilder(COMMAND_DELIMITER);
         Class cl = command.getClass();
@@ -49,39 +67,13 @@ public class Protocol {
             field.setAccessible(true);
             serializedCommand
                     .append(field.getName())
-                    .append("=")
+                    .append(VALUE_DELIMITER)
                     .append(field.getType().isArray() ? arrayFieldOfCommandToString(field, command)
-                                                      : field.get(command))
-                    .append(";");
+                            : field.get(command))
+                    .append(ARGUMENTS_DELIMITER);
         }
 
-        System.out.println("command: '"+serializedCommand+"'");
         return serializedCommand.toString();
-    }
-
-    public static ArrayList<Executable> deserialize(String serializedCommands) {
-        ArrayList<Executable> executableCommands = new ArrayList<>();
-
-        for (String stringCommand : serializedCommands.split(COMMAND_DELIMITER)) {
-            stringCommand = stringCommand.trim();
-            if ("".equals(stringCommand))
-                continue;
-
-            HashMap<String, String> params = getParamsOf(stringCommand);
-            int id = shiftIdFrom(params);
-
-            if (id == Command.INVALID) {
-                executableCommands.add(new InvalidCommand());
-                continue;
-            }
-
-            Executable command = getCommandFor(id);
-            setParamsToCommand(params, command);
-
-            executableCommands.add(command);
-        }
-
-        return executableCommands;
     }
 
     private static boolean isForbidden(String name) {
@@ -108,7 +100,7 @@ public class Protocol {
 
     private static HashMap<String, String> getParamsOf(String command) {
         HashMap<String, String> params = new HashMap<>();
-        String[] pairs = command.split(ARGUMENTS_DELIMITER);
+        String[] pairs = Utils.explodeString(command, ARGUMENTS_DELIMITER);
 
         for (String pair: pairs) {
             if (pair.contains(VALUE_DELIMITER)) {
@@ -135,8 +127,13 @@ public class Protocol {
         return id;
     }
 
-    //TODO: server factory
-    private static Executable getCommandFor(int id) {
+    private static Executable getCommandFor(CommandPlacement placement, int id) {
+        return placement == CommandPlacement.SERVER
+               ? getServerCommandFor(id)
+               : getClientCommandFor(id);
+    }
+
+    private static Executable getServerCommandFor(int id) {
         switch (id) {
             case Command.REGISTER:
                 return new RegisterUserCommand();
@@ -156,9 +153,13 @@ public class Protocol {
             case Command.EXIT:
                 return new ExitCommand();
 
-            case Command.INVALID:
-                return new InvalidCommand();
+            default:
+                return new UnknownCommand();
+        }
+    }
 
+    private static Executable getClientCommandFor(int id) {
+        switch (id) {
             case Command.ACCEPT:
                 return new AcceptCommand();
 
@@ -175,7 +176,7 @@ public class Protocol {
                 return new UserMessageCommand();
 
             default:
-                return new UnknownCommand();
+                return new InvalidCommand();
         }
     }
 
@@ -194,9 +195,7 @@ public class Protocol {
                 Object castedValue = Parser.parseString(value, field.getType());
                 field.setAccessible(true);
                 field.set(command, castedValue);
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
+            } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
         }

@@ -1,17 +1,20 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.commands2.UserMessageCommand;
-import me.proartex.test.vitamin.chat.commands2.InvalidCommand;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.TextConst;
+import me.proartex.test.vitamin.chat.Serializable;
+import me.proartex.test.vitamin.chat.client.commands.UserMessageCommand;
+import me.proartex.test.vitamin.chat.client.commands.InvalidCommand;
 import me.proartex.test.vitamin.chat.server.*;
 
 import java.nio.channels.SelectionKey;
+import java.util.Date;
 
 public class SendMessageCommand implements Executable, Validatable, ServerCommand, Serializable {
 
     public static final int id = Command.MESSAGE;
-    private ServerCommandHandler handler;
+    private CommandHandler handler;
     private SelectionKey key;
     private String message;
 
@@ -23,19 +26,20 @@ public class SendMessageCommand implements Executable, Validatable, ServerComman
 
     @Override
     public void execute() {
+        Date now = new Date();
         User user = handler.getUserWith(key);
         String username = user.getUsername();
 
         if (!isValidCommand()) {
-            Executable clientCommand = new InvalidCommand(MsgConst.INVALID_MESSAGE_COMMAND);
+            Executable clientCommand = new InvalidCommand(TextConst.MESSAGE_COMMAND);
             handler.sendCommandToUser(clientCommand, user);
             return;
         }
 
-        HistoryMessage historyMessage = new HistoryMessage(username, message);
+        HistoryMessage historyMessage = new HistoryMessage(username, message, now);
         handler.addMessageToHistory(historyMessage);
 
-        Executable messageCommand = new UserMessageCommand(username, message);
+        Executable messageCommand = new UserMessageCommand(username, message, now.getTime());
         handler.sendCommandToAllRegistered(messageCommand);
     }
 
@@ -45,7 +49,7 @@ public class SendMessageCommand implements Executable, Validatable, ServerComman
     }
 
     @Override
-    public void setHandler(ServerCommandHandler handler) {
+    public void setHandler(CommandHandler handler) {
         this.handler = handler;
     }
 

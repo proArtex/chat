@@ -1,10 +1,10 @@
-package me.proartex.test.vitamin.chat.commands2;
+package me.proartex.test.vitamin.chat.client.commands;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.MsgConst;
+import me.proartex.test.vitamin.chat.TextConst;
 import me.proartex.test.vitamin.chat.client.Client;
-import me.proartex.test.vitamin.chat.commands.Executable;
-import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.Serializable;
 
 public class AcceptCommand implements Executable, ClientCommand, Serializable {
 
@@ -14,7 +14,7 @@ public class AcceptCommand implements Executable, ClientCommand, Serializable {
     @Override
     public void execute() {
         client.setRegistered(true);
-        client.print(MsgConst.REGISTER_SUCCESS);
+        client.print(TextConst.REGISTER_SUCCESS);
     }
 
     @Override

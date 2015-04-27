@@ -1,20 +1,19 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.CommandHandler;
 import me.proartex.test.vitamin.chat.Utils;
-import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.Executable;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 
 import java.nio.channels.SelectionKey;
 
-public class ServerCommandHandler implements CommandHandler {
+public class CommandHandler {
 
     private Server server;
     private Session session;
     private RegisteredGroup registeredUsers;
     private UserGroup notRegisteredUsers;
 
-    public ServerCommandHandler(Server server, Session session, RegisteredGroup registeredUsers, NotRegisteredGroup notRegisteredUsers) {
+    public CommandHandler(Server server, Session session, RegisteredGroup registeredUsers, NotRegisteredGroup notRegisteredUsers) {
         this.server = server;
         this.session = session;
         this.registeredUsers = registeredUsers;
@@ -29,7 +28,6 @@ public class ServerCommandHandler implements CommandHandler {
         return notRegisteredUsers.containsUserWith(key);
     }
 
-    //NEW
     public User getUserWith(SelectionKey key) {
         UserGroup group = server.getClientGroup(key);
         return group.getUserWith(key);

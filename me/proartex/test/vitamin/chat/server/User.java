@@ -1,6 +1,6 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.commands.Executable;
+import me.proartex.test.vitamin.chat.Executable;
 
 import java.util.LinkedList;
 import java.util.List;

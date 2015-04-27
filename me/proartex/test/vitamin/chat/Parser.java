@@ -1,6 +1,6 @@
-package me.proartex.test.vitamin.chat.protocol;
+package me.proartex.test.vitamin.chat;
 
-import me.proartex.test.vitamin.chat.protocol.exceptions.UnknownParseTypeException;
+import me.proartex.test.vitamin.chat.exceptions.UnknownParseTypeException;
 
 //TODO: different classes
 public class Parser {

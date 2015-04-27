@@ -1,4 +1,4 @@
-package me.proartex.test.vitamin.chat.commands2;
+package me.proartex.test.vitamin.chat.client.commands;
 
 import me.proartex.test.vitamin.chat.client.Client;
 

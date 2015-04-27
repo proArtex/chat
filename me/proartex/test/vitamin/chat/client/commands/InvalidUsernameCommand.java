@@ -1,10 +1,10 @@
-package me.proartex.test.vitamin.chat.commands2;
+package me.proartex.test.vitamin.chat.client.commands;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.MsgConst;
+import me.proartex.test.vitamin.chat.TextConst;
 import me.proartex.test.vitamin.chat.client.Client;
-import me.proartex.test.vitamin.chat.commands.Executable;
-import me.proartex.test.vitamin.chat.commands.Serializable;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.Serializable;
 
 public class InvalidUsernameCommand implements Executable, ClientCommand, Serializable {
 
@@ -20,7 +20,7 @@ public class InvalidUsernameCommand implements Executable, ClientCommand, Serial
 
     @Override
     public void execute() {
-        client.print(username + MsgConst.INVALID_USERNAME_POSTFIX);
+        client.print(username + TextConst.INVALID_USERNAME_POSTFIX);
     }
 
     @Override

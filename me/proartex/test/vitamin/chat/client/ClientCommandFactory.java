@@ -1,7 +1,7 @@
 package me.proartex.test.vitamin.chat.client;
 
-import me.proartex.test.vitamin.chat.commands.Serializable;
-import me.proartex.test.vitamin.chat.commands.*;
+import me.proartex.test.vitamin.chat.Serializable;
+import me.proartex.test.vitamin.chat.server.commands.*;
 
 public class ClientCommandFactory {
 

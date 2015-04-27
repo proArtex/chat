@@ -1,9 +1,8 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.commands.Executable;
-import me.proartex.test.vitamin.chat.commands2.SystemMessageCommand;
-import me.proartex.test.vitamin.chat.commands2.UserMessageCommand;
+import me.proartex.test.vitamin.chat.TextConst;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.client.commands.SystemMessageCommand;
 
 import java.nio.channels.SelectionKey;
 import java.util.HashMap;
@@ -50,7 +49,7 @@ public class RegisteredGroup extends UserGroup {
 
             if (!key.isValid()) {
                 String username = user.getUsername();
-                String message = username + MsgConst.USER_LEFT_POSTFIX;
+                String message = username + TextConst.USER_LEFT_POSTFIX;
                 Executable messageCommand = new SystemMessageCommand(message);
                 addCommandToAllUsers(messageCommand);
 

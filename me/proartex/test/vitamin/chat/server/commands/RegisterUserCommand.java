@@ -1,9 +1,11 @@
-package me.proartex.test.vitamin.chat.commands;
+package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.MsgConst;
-import me.proartex.test.vitamin.chat.commands2.*;
-import me.proartex.test.vitamin.chat.server.ServerCommandHandler;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.TextConst;
+import me.proartex.test.vitamin.chat.Serializable;
+import me.proartex.test.vitamin.chat.client.commands.*;
+import me.proartex.test.vitamin.chat.server.CommandHandler;
 import me.proartex.test.vitamin.chat.server.User;
 
 import java.nio.channels.SelectionKey;
@@ -11,7 +13,7 @@ import java.nio.channels.SelectionKey;
 public class RegisterUserCommand implements Executable, Validatable, ServerCommand, Serializable {
 
     public static final int id = Command.REGISTER;
-    private ServerCommandHandler handler;
+    private CommandHandler handler;
     private SelectionKey key;
     private String username;
 
@@ -27,7 +29,7 @@ public class RegisterUserCommand implements Executable, Validatable, ServerComma
 
         //TODO: compact
         if (!isValidCommand()) {
-            Executable invalidCommand = new InvalidCommand(MsgConst.INVALID_REGISTER_COMMAND);
+            Executable invalidCommand = new InvalidCommand(TextConst.REGISTER_COMMAND);
             handler.sendCommandToUser(invalidCommand, user);
             return;
         }
@@ -47,7 +49,7 @@ public class RegisterUserCommand implements Executable, Validatable, ServerComma
         Executable acceptCommand = new AcceptCommand();
         handler.sendCommandToUser(acceptCommand, user);
 
-        String message = username + MsgConst.USER_SIGN_POSTFIX;
+        String message = username + TextConst.USER_SIGN_POSTFIX;
         Executable messageCommand = new SystemMessageCommand(message);
         handler.sendCommandToAllRegistered(messageCommand);
 
@@ -61,7 +63,7 @@ public class RegisterUserCommand implements Executable, Validatable, ServerComma
     }
 
     @Override
-    public void setHandler(ServerCommandHandler handler) {
+    public void setHandler(CommandHandler handler) {
         this.handler = handler;
     }
 

@@ -1,11 +1,12 @@
 package me.proartex.test.vitamin.chat.server;
 
+import me.proartex.test.vitamin.chat.CommandPlacement;
 import me.proartex.test.vitamin.chat.Utils;
-import me.proartex.test.vitamin.chat.commands.Serializable;
-import me.proartex.test.vitamin.chat.commands.ServerCommand;
+import me.proartex.test.vitamin.chat.Serializable;
+import me.proartex.test.vitamin.chat.server.commands.ServerCommand;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
-import me.proartex.test.vitamin.chat.commands.Executable;
-import me.proartex.test.vitamin.chat.exceptions.*;
+import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.server.exceptions.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -14,9 +15,6 @@ import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * @since 1.7
- */
 public class Server implements Runnable {
 
     public static final String DEFAULT_HOST = "localhost";
@@ -25,7 +23,7 @@ public class Server implements Runnable {
     private Session session;
     private RegisteredGroup registeredUsers;
     private NotRegisteredGroup notRegisteredUsers;
-    private ServerCommandHandler commandHandler;
+    private CommandHandler commandHandler;
     private InetSocketAddress socketAddress;
     private ByteBuffer buffer;
     private ServerSocketChannel serverChannel;
@@ -39,7 +37,7 @@ public class Server implements Runnable {
         session            = new Session();
         registeredUsers    = new RegisteredGroup();
         notRegisteredUsers = new NotRegisteredGroup();
-        commandHandler     = new ServerCommandHandler(this, session, registeredUsers, notRegisteredUsers);
+        commandHandler     = new CommandHandler(this, session, registeredUsers, notRegisteredUsers);
         socketAddress      = new InetSocketAddress(host, port);
         buffer             = ByteBuffer.allocate(512);
     }
@@ -144,8 +142,7 @@ public class Server implements Runnable {
     private Set<SelectionKey> listenForNewActivitiesWithTimeout(long timeout) throws IOException {
         Set<SelectionKey> keys = selector.selectedKeys();
         keys.clear();
-        selector.select();
-//        selector.select(timeout);
+        selector.select(/*timeout*/);
 
         return keys;
     }
@@ -240,7 +237,7 @@ public class Server implements Runnable {
     }
 
     private void deserializeAndExecute(String serializedCommands, SelectionKey key) {
-        List<Executable> commands = Protocol.deserialize(serializedCommands);
+        List<Executable> commands = Protocol.deserialize(serializedCommands, CommandPlacement.SERVER);
 //        System.out.println("found commands: "+ commands);
         for (Executable command : commands) {
             ((ServerCommand) command).setHandler(commandHandler);
