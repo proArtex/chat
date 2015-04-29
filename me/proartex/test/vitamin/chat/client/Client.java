@@ -42,7 +42,8 @@ public class Client implements Runnable {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        Client client =  new Client("localhost", 9993);
+        ArgumentParser parser = new ArgumentParser(args);
+        Client client =  new Client(parser.getHost(), parser.getPort());
         client.start();
     }
 
@@ -101,7 +102,6 @@ public class Client implements Runnable {
     }
 
     public void runInboundMessageListener() {
-//        receiver.setIn(in);
         new Thread(receiver).start();
     }
 
@@ -132,7 +132,7 @@ public class Client implements Runnable {
         stdin  = new BufferedReader(new InputStreamReader(System.in));
     }
 
-    private void readAndSendUserMessageInLoop() {
+    protected void readAndSendUserMessageInLoop() {
         try {
             tryToReadAndSendUserMessageInLoop();
         }
@@ -167,7 +167,7 @@ public class Client implements Runnable {
 //                System.exit(-1);
 
             sendMessage("/register " + username);
-            response = readFromSocketChannel();
+            response = _readFromSocketChannel();
             deserializeAndExecute(response);
         }
         while (!clientThread.isInterrupted() && response != null && !isRegistered);
@@ -197,7 +197,7 @@ public class Client implements Runnable {
     }
 
     //TODO: is already sync?
-    private String readFromSocketChannel() throws IOException {
+    protected String _readFromSocketChannel() throws IOException {
         return in.readLine();
     }
 
@@ -229,7 +229,7 @@ public class Client implements Runnable {
         private void tryToReadAndPrintServerResponseInLoop() throws IOException {
             String response;
 
-            while (!clientThread.isInterrupted() && (response = readFromSocketChannel()) != null) {
+            while (!clientThread.isInterrupted() && (response = _readFromSocketChannel()) != null) {
                 deserializeAndExecute(response);
             }
         }
