@@ -17,7 +17,7 @@ import java.util.*;
 
 public class Server implements Runnable {
 
-    public static final String DEFAULT_HOST = "localhost";
+    public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT    = 9993;
     private volatile Thread serverThread;
     private Session session;
