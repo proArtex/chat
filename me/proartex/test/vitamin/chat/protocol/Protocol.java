@@ -9,6 +9,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
 
+//TODO: instance of interface + versionUID (?)
 public class Protocol {
 
     public  static final String RESPONSE_DELIMITER  = "<@rd>";
