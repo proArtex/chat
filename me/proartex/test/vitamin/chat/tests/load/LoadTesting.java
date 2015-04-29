@@ -1,8 +1,5 @@
 package me.proartex.test.vitamin.chat.tests.load;
 
-import me.proartex.test.vitamin.chat.client.Client;
-//import me.proartex.test.vitamin.chat.client.Receiver;
-
 import java.util.Random;
 
 public class LoadTesting {
@@ -16,8 +13,8 @@ public class LoadTesting {
     public static void main(String[] args) {
 
         for (int i = 0; i < CLIENT_LIMIT; i++) {
-            ClientThread clientThread =  new ClientThread(new Client("localhost", 9993), ++clientNum);
-            clientThread.start();
+            TestClient client = new TestClient(++clientNum);
+            client.start();
 
             try {
                 Thread.sleep(randomInRange(0, LOAD_HIGH));
