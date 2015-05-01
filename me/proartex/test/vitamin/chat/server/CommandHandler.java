@@ -30,8 +30,7 @@ public class CommandHandler {
     }
 
     public User getUserWith(SelectionKey key) {
-        UserGroup group = server.getClientGroup(key);
-        return group.getUserWith(key);
+        return server.getUserWith(key);
     }
 
     public void sendCommandToUser(Serializable command, User user) {

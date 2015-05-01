@@ -157,7 +157,7 @@ public class Server implements Runnable {
     private void acceptConnection() throws IOException {
         SocketChannel socketChannel = serverChannel.accept();
         socketChannel.configureBlocking(false);
-        SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ);
+        SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ/* | SelectionKey.OP_WRITE */);
 
         notRegisteredUsers.add(key, new User());
     }
@@ -189,11 +189,8 @@ public class Server implements Runnable {
 
     private void writeToChannelOf(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-
-        UserGroup userGroup = getClientGroup(key);
-        User user = userGroup.getUserWith(key);
+        User user = getUserWith(key);
         List<String> commandQueue = user.getOutboundCommandQueue();
-
 
         try {
             Iterator<String> iterator = commandQueue.iterator();
@@ -218,6 +215,10 @@ public class Server implements Runnable {
     private void switchUserOperations() {
         switchUserOperations(registeredUsers);
         switchUserOperations(notRegisteredUsers);
+    }
+
+    private void switchOpsForKey(int ops, SelectionKey key) {
+        key.interestOps(ops);
     }
 
     private void switchUserOperations(UserGroup userGroup) {
@@ -272,7 +273,9 @@ public class Server implements Runnable {
         }
     }
 
-    UserGroup getClientGroup(SelectionKey key) {
-        return registeredUsers.containsUserWith(key) ? registeredUsers : notRegisteredUsers;
+    User getUserWith(SelectionKey key) {
+        return registeredUsers.containsUserWith(key)
+               ? registeredUsers.getUserWith(key)
+               : notRegisteredUsers.getUserWith(key);
     }
 }
