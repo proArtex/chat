@@ -2,18 +2,20 @@ package me.proartex.test.vitamin.chat.server.commands;
 
 import me.proartex.test.vitamin.chat.Command;
 import me.proartex.test.vitamin.chat.Executable;
-import me.proartex.test.vitamin.chat.TextConst;
 import me.proartex.test.vitamin.chat.Serializable;
-import me.proartex.test.vitamin.chat.client.commands.UserMessageCommand;
+import me.proartex.test.vitamin.chat.TextConst;
 import me.proartex.test.vitamin.chat.client.commands.InvalidCommand;
-import me.proartex.test.vitamin.chat.server.*;
+import me.proartex.test.vitamin.chat.client.commands.UserMessageCommand;
+import me.proartex.test.vitamin.chat.server.CommandHandler;
+import me.proartex.test.vitamin.chat.server.HistoryMessage;
+import me.proartex.test.vitamin.chat.server.User;
 
 import java.nio.channels.SelectionKey;
 import java.util.Date;
 
 public class SendMessageCommand implements Executable, Validatable, ServerCommand, Serializable {
 
-    public static final int id = Command.MESSAGE;
+    public static final int id = Command.ID_MESSAGE;
     private CommandHandler handler;
     private SelectionKey key;
     private String message;
@@ -31,7 +33,7 @@ public class SendMessageCommand implements Executable, Validatable, ServerComman
         String username = user.getUsername();
 
         if (!isValidCommand()) {
-            Executable clientCommand = new InvalidCommand(TextConst.MESSAGE_COMMAND);
+            Serializable clientCommand = new InvalidCommand(TextConst.MESSAGE_COMMAND);
             handler.sendCommandToUser(clientCommand, user);
             return;
         }
@@ -39,7 +41,7 @@ public class SendMessageCommand implements Executable, Validatable, ServerComman
         HistoryMessage historyMessage = new HistoryMessage(username, message, now);
         handler.addMessageToHistory(historyMessage);
 
-        Executable messageCommand = new UserMessageCommand(username, message, now.getTime());
+        Serializable messageCommand = new UserMessageCommand(username, message, now.getTime());
         handler.sendCommandToAllRegistered(messageCommand);
     }
 

@@ -43,7 +43,7 @@ class TestClient extends Client {
         try {
             while (new Date().getTime() < startTime + lifeTime) {
                 Thread.sleep(LoadTesting.randomInRange(1000, 3000));
-                sendMessage("message" + String.valueOf(++messageNum)); //TODO: use commands also
+                sendMessage("message" + String.valueOf(++messageNum));
             }
 
             sendMessage("/exit");

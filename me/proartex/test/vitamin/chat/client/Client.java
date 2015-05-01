@@ -1,14 +1,14 @@
 package me.proartex.test.vitamin.chat.client;
 
-import me.proartex.test.vitamin.chat.CommandPlacement;
-import me.proartex.test.vitamin.chat.TextConst;
-import me.proartex.test.vitamin.chat.Executable;
+import me.proartex.test.vitamin.chat.*;
 import me.proartex.test.vitamin.chat.client.commands.ClientCommand;
 import me.proartex.test.vitamin.chat.client.exceptions.ClientException;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
-import me.proartex.test.vitamin.chat.Serializable;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -27,7 +27,7 @@ public class Client implements Runnable {
     private String host;
     private int port;
     private BufferedReader stdin;
-    private BufferedReader in; //TODO: volatile?
+    private BufferedReader in;
     private PrintWriter out;
     private Socket socket;
 
@@ -42,7 +42,7 @@ public class Client implements Runnable {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        ArgumentParser parser = new ArgumentParser(args);
+        SocketArgsParser parser = new SocketArgsParser(args);
         Client client =  new Client(parser.getHost(), parser.getPort());
         client.start();
     }
@@ -156,15 +156,13 @@ public class Client implements Runnable {
     }
 
     private void tryToRegister() throws IOException {
-        String response;
+        String response = null;
         print(TextConst.ASK_FOR_USERNAME);
 
         do {
             String username = readFromConsole();
-
-            //read while stopping? wtf
-//            if (username == null)
-//                System.exit(-1);
+            if (username == null)
+                break;
 
             sendMessage("/register " + username);
             response = _readFromSocketChannel();
@@ -196,8 +194,7 @@ public class Client implements Runnable {
         return stdin.readLine();
     }
 
-    //TODO: is already sync?
-    protected String _readFromSocketChannel() throws IOException {
+    protected synchronized String _readFromSocketChannel() throws IOException {
         return in.readLine();
     }
 
@@ -214,7 +211,7 @@ public class Client implements Runnable {
         @Override
         public void run() {
             try {
-                tryToReadAndPrintServerResponseInLoop();
+                tryToReadAndProcessResponseInLoop();
             }
             catch (IOException ignore) {
                 //NOP
@@ -226,7 +223,7 @@ public class Client implements Runnable {
             }
         }
 
-        private void tryToReadAndPrintServerResponseInLoop() throws IOException {
+        private void tryToReadAndProcessResponseInLoop() throws IOException {
             String response;
 
             while (!clientThread.isInterrupted() && (response = _readFromSocketChannel()) != null) {

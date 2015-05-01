@@ -1,7 +1,7 @@
 package me.proartex.test.vitamin.chat;
 
-/*
-    Marker
+/**
+ * Marker
  */
 public interface Serializable {
 }

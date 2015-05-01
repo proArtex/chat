@@ -1,7 +1,5 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.Executable;
-
 import java.nio.channels.SelectionKey;
 import java.util.Map;
 
@@ -31,28 +29,10 @@ public abstract class UserGroup {
         return _users().get(key);
     }
 
-//    public void notifyUserWithKey(String message, SelectionKey key) {
-//        User user = getUserWith(key);
-//        _sendMessageToUser(message, user);
-//    }
-
-    //NEW
-    public void addCommandToUserWithKey(Executable command, SelectionKey key) {
-        User user = getUserWith(key);
-        _sendCommandToUser(command, user);
-    }
-
-//    protected void _sendMessageToUser(String message, User user) {
-//        user.addMessageToQueue(message);
-//    }
-
-    //NEW
-    protected void _sendCommandToUser(Executable command, User user) {
+    protected void _sendCommandToUser(String command, User user) {
         user.addCommandToQueue(command);
     }
 
-
-    //TMP
     public Map<SelectionKey, User> getUsers() {
         return _users();
     }

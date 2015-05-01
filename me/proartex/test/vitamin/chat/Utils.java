@@ -1,5 +1,6 @@
 package me.proartex.test.vitamin.chat;
 
+import java.lang.reflect.Array;
 import java.util.regex.Pattern;
 
 public class Utils {
@@ -24,5 +25,15 @@ public class Utils {
 
     public static String[] explodeString(String context, String delimiter) {
         return context.split(Pattern.quote(delimiter));
+    }
+
+    public static Object[] castObjectToArray(Object array) {
+        Object[] castedArray = new Object[Array.getLength(array)];
+
+        for(int i = 0; i < castedArray.length; i++) {
+            castedArray[i] = Array.get(array, i);
+        }
+
+        return castedArray;
     }
 }

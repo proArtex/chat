@@ -1,19 +1,26 @@
 package me.proartex.test.vitamin.chat.server;
 
 import me.proartex.test.vitamin.chat.CommandPlacement;
-import me.proartex.test.vitamin.chat.Utils;
-import me.proartex.test.vitamin.chat.Serializable;
-import me.proartex.test.vitamin.chat.server.commands.ServerCommand;
-import me.proartex.test.vitamin.chat.protocol.Protocol;
 import me.proartex.test.vitamin.chat.Executable;
-import me.proartex.test.vitamin.chat.server.exceptions.*;
+import me.proartex.test.vitamin.chat.Utils;
+import me.proartex.test.vitamin.chat.protocol.Protocol;
+import me.proartex.test.vitamin.chat.server.commands.ServerCommand;
+import me.proartex.test.vitamin.chat.server.exceptions.ReadException;
+import me.proartex.test.vitamin.chat.server.exceptions.ServerException;
+import me.proartex.test.vitamin.chat.server.exceptions.WriteException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class Server implements Runnable {
 
@@ -185,13 +192,13 @@ public class Server implements Runnable {
 
         UserGroup userGroup = getClientGroup(key);
         User user = userGroup.getUserWith(key);
-        List<Executable> commandQueue = user.getOutboundCommandQueue();
+        List<String> commandQueue = user.getOutboundCommandQueue();
+
 
         try {
-            Iterator<Executable> iterator = commandQueue.iterator();
+            Iterator<String> iterator = commandQueue.iterator();
             while (iterator.hasNext()) {
-                String command = Protocol.serialize((Serializable) iterator.next());
-                command = Utils.addLineSeparator(command);
+                String command = Utils.addLineSeparator(iterator.next());
                 ByteBuffer bufferedMessage = ByteBuffer.wrap(command.getBytes());
                 socketChannel.write(bufferedMessage);
                 iterator.remove();

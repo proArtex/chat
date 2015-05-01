@@ -10,11 +10,11 @@ public class ClientCommandFactory {
             return new SendMessageCommand(context);
 
         if (isRegisterCommand(context)) {
-            context = removeContextFromBeginningOfMessage("/register", context);
+            context = cutSubstringFromBeginningOfContext("/register ", context);
             return new RegisterUserCommand(context);
         }
 
-        context = removeContextFromBeginningOfMessage("/", context);
+        context = cutSubstringFromBeginningOfContext("/", context);
         switch (context) {
             case "history":
                 return new ShowMessageHistoryCommand();
@@ -33,16 +33,16 @@ public class ClientCommandFactory {
         }
     }
 
-    private static boolean isMessageCommand(String message) {
-        return message.length() == 0 || message.charAt(0) != '/';
+    private static boolean isMessageCommand(String context) {
+        return context.length() == 0 || context.charAt(0) != '/';
     }
 
-    private static boolean isRegisterCommand(String message) {
-        return message.length() > 9 && "/register".equals(message.substring(0, 9));
+    private static boolean isRegisterCommand(String context) {
+        return context.length() >= 10 && "/register ".equals(context.substring(0, 10));
     }
 
-    private static String removeContextFromBeginningOfMessage(String context, String message) {
+    private static String cutSubstringFromBeginningOfContext(String context, String message) {
         int index = context.length();
-        return message.substring(index).trim();
+        return message.substring(index);
     }
 }

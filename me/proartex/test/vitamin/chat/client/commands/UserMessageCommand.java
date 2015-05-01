@@ -1,15 +1,15 @@
 package me.proartex.test.vitamin.chat.client.commands;
 
 import me.proartex.test.vitamin.chat.Command;
-import me.proartex.test.vitamin.chat.client.Client;
 import me.proartex.test.vitamin.chat.Executable;
 import me.proartex.test.vitamin.chat.Serializable;
+import me.proartex.test.vitamin.chat.client.Client;
 
 import java.text.SimpleDateFormat;
 
 public class UserMessageCommand implements Executable, ClientCommand, Serializable {
 
-    public static final int id = Command.USER_MESSAGE;
+    public static final int id = Command.ID_USER_MESSAGE;
     private Client client;
     private String sender;
     private String message;

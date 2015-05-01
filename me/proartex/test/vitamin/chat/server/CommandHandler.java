@@ -1,11 +1,12 @@
 package me.proartex.test.vitamin.chat.server;
 
+import me.proartex.test.vitamin.chat.Serializable;
 import me.proartex.test.vitamin.chat.Utils;
-import me.proartex.test.vitamin.chat.Executable;
 import me.proartex.test.vitamin.chat.protocol.Protocol;
 
 import java.nio.channels.SelectionKey;
 
+//TODO: inner class?
 public class CommandHandler {
 
     private Server server;
@@ -33,12 +34,14 @@ public class CommandHandler {
         return group.getUserWith(key);
     }
 
-    public void sendCommandToUser(Executable command, User user) {
-        user.addCommandToQueue(command);
+    public void sendCommandToUser(Serializable command, User user) {
+        String serializedCommand = Protocol.serialize(command);
+        user.addCommandToQueue(serializedCommand);
     }
 
-    public void sendCommandToAllRegistered(Executable command) {
-        registeredUsers.addCommandToAllUsers(command);
+    public void sendCommandToAllRegistered(Serializable command) {
+        String serializedCommand = Protocol.serialize(command);
+        registeredUsers.addCommandToAllUsers(serializedCommand);
     }
 
     public void addMessageToHistory(HistoryMessage message) {

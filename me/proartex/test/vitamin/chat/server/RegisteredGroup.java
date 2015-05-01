@@ -1,8 +1,9 @@
 package me.proartex.test.vitamin.chat.server;
 
+import me.proartex.test.vitamin.chat.Serializable;
 import me.proartex.test.vitamin.chat.TextConst;
-import me.proartex.test.vitamin.chat.Executable;
 import me.proartex.test.vitamin.chat.client.commands.SystemMessageCommand;
+import me.proartex.test.vitamin.chat.protocol.Protocol;
 
 import java.nio.channels.SelectionKey;
 import java.util.HashMap;
@@ -22,7 +23,7 @@ public class RegisteredGroup extends UserGroup {
         return _users;
     }
 
-    public void addCommandToAllUsers(Executable command) {
+    public void addCommandToAllUsers(String command) {
         for (User user : _users.values()) {
             _sendCommandToUser(command, user);
         }
@@ -50,8 +51,10 @@ public class RegisteredGroup extends UserGroup {
             if (!key.isValid()) {
                 String username = user.getUsername();
                 String message = username + TextConst.USER_LEFT_POSTFIX;
-                Executable messageCommand = new SystemMessageCommand(message);
-                addCommandToAllUsers(messageCommand);
+
+                Serializable command = new SystemMessageCommand(message);
+                String serializedCommand = Protocol.serialize(command);
+                addCommandToAllUsers(serializedCommand);
 
                 iterator.remove();
 

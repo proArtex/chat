@@ -1,21 +1,14 @@
 package me.proartex.test.vitamin.chat.server;
 
-import me.proartex.test.vitamin.chat.Executable;
-
 import java.util.LinkedList;
 import java.util.List;
 
 public class User {
 
     private String username;
-//    private List<String> inboundMessageQueue = new LinkedList<>();
-    private List<Executable> outboundCommandQueue = new LinkedList<>();
+    private List<String> outboundCommandQueue = new LinkedList<>();
 
-//    public void addMessageToQueue(String message) {
-//        inboundMessageQueue.add(message);
-//    }
-
-    public void addCommandToQueue(Executable command) {
+    public void addCommandToQueue(String command) {
         outboundCommandQueue.add(command);
     }
 
@@ -23,7 +16,7 @@ public class User {
         return username;
     }
 
-    public List<Executable> getOutboundCommandQueue() {
+    public List<String> getOutboundCommandQueue() {
         return outboundCommandQueue;
     }
 

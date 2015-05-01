@@ -5,11 +5,9 @@ import me.proartex.test.vitamin.chat.client.commands.*;
 import me.proartex.test.vitamin.chat.protocol.exceptions.SerializeException;
 import me.proartex.test.vitamin.chat.server.commands.*;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
 
-//TODO: instance of interface + versionUID (?)
 public class Protocol {
 
     public  static final String RESPONSE_DELIMITER  = "<@rd>";
@@ -83,20 +81,9 @@ public class Protocol {
 
     private static String arrayFieldOfCommandToString(Field field, Serializable command) throws ClassNotFoundException, IllegalAccessException {
         Class arrayClass = Class.forName(field.getType().getName());
-        Object[] array = castObjectToArray(arrayClass.cast(field.get(command)));
+        Object[] array = Utils.castObjectToArray(arrayClass.cast(field.get(command)));
 
         return Arrays.asList(array).toString();
-    }
-
-    //TODO: utils
-    private static Object[] castObjectToArray(Object array) {
-        Object[] castedArray = new Object[Array.getLength(array)];
-
-        for(int i = 0; i < castedArray.length; i++) {
-            castedArray[i] = Array.get(array, i);
-        }
-
-        return castedArray;
     }
 
     private static HashMap<String, String> getParamsOf(String command) {
@@ -121,7 +108,7 @@ public class Protocol {
             id = Integer.parseInt(params.get("id"));
         }
         catch (NumberFormatException e) {
-            id = Command.INVALID;
+            id = Command.ID_INVALID;
         }
 
         params.remove("id");
@@ -136,22 +123,22 @@ public class Protocol {
 
     private static Executable getServerCommandFor(int id) {
         switch (id) {
-            case Command.REGISTER:
+            case Command.ID_REGISTER:
                 return new RegisterUserCommand();
 
-            case Command.MESSAGE:
+            case Command.ID_MESSAGE:
                 return new SendMessageCommand();
 
-            case Command.HISTORY:
+            case Command.ID_HISTORY:
                 return new ShowMessageHistoryCommand();
 
-            case Command.COMMANDS:
+            case Command.ID_COMMANDS:
                 return new ShowCommandListCommand();
 
-            case Command.TOTAL:
+            case Command.ID_TOTAL:
                 return new ShowClientsNumCommand();
 
-            case Command.EXIT:
+            case Command.ID_EXIT:
                 return new ExitCommand();
 
             default:
@@ -161,19 +148,19 @@ public class Protocol {
 
     private static Executable getClientCommandFor(int id) {
         switch (id) {
-            case Command.ACCEPT:
+            case Command.ID_ACCEPT:
                 return new AcceptCommand();
 
-            case Command.INVALID_NAME:
+            case Command.ID_INVALID_NAME:
                 return new InvalidUsernameCommand();
 
-            case Command.TAKEN_NAME:
+            case Command.ID_TAKEN_NAME:
                 return new TakenUsernameCommand();
 
-            case Command.SYSTEM_MESSAGE:
+            case Command.ID_SYSTEM_MESSAGE:
                 return new SystemMessageCommand();
 
-            case Command.USER_MESSAGE:
+            case Command.ID_USER_MESSAGE:
                 return new UserMessageCommand();
 
             default:

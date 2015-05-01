@@ -1,11 +1,11 @@
-package me.proartex.test.vitamin.chat.client;
+package me.proartex.test.vitamin.chat;
 
-public class ArgumentParser {
+public class SocketArgsParser {
     private final String[] args;
     private String host;
     private int port;
 
-    public ArgumentParser(String[] args) {
+    public SocketArgsParser(String[] args) {
         this.args = args;
         parseParams();
         setDefaultsIfEmpty();

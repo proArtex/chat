@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+//TODO: make more tests
 public class ServerResponseTest extends Assert {
 
     private Socket socket;

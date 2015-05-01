@@ -25,7 +25,7 @@ public class LoadTesting {
         }
     }
 
-    protected static int randomInRange(int min, int max) {
+    public static int randomInRange(int min, int max) {
         return new Random().nextInt(max - min + 1) + min;
     }
 }
