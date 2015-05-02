@@ -26,6 +26,7 @@ public class Server implements Runnable {
 
     public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT    = 9993;
+    public static final int USER_LIMIT      = 1000;
     private volatile Thread serverThread;
     private Session session;
     private RegisteredGroup registeredUsers;
@@ -188,6 +189,25 @@ public class Server implements Runnable {
     }
 
     private void writeToChannelOf(SelectionKey key) {
+        /*
+        SocketChannel socketChannel = (SocketChannel) key.channel();
+        User user = getUserWith(key);
+        List<String> commandQueue = user.getOutboundCommandQueue();
+
+        if (!commandQueue.isEmpty()) {
+            try {
+                String command = commandQueue.get(0);
+                command = Utils.addLineSeparator(command);
+                ByteBuffer bufferedMessage = ByteBuffer.wrap(command.getBytes());
+                socketChannel.write(bufferedMessage);
+                commandQueue.remove(0);
+            } catch (IOException e) {
+                cancelKey(key);
+                throw new WriteException();
+            }
+        }
+        */
+
         SocketChannel socketChannel = (SocketChannel) key.channel();
         User user = getUserWith(key);
         List<String> commandQueue = user.getOutboundCommandQueue();
@@ -215,10 +235,6 @@ public class Server implements Runnable {
     private void switchUserOperations() {
         switchUserOperations(registeredUsers);
         switchUserOperations(notRegisteredUsers);
-    }
-
-    private void switchOpsForKey(int ops, SelectionKey key) {
-        key.interestOps(ops);
     }
 
     private void switchUserOperations(UserGroup userGroup) {

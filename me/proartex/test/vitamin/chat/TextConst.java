@@ -11,6 +11,7 @@ public abstract class TextConst {
     public static final String INVALID_COMMAND_PREFIX   = "Invalid command ";
 
     //server
+    public static final String SERVER_OVERLOADED        = "Server is overloaded, try again later";
     public static final String TOTAL_USERS_PREFIX       = "Total users: ";
     public static final String UNKNOWN_COMMAND_PREFIX   = "Unknown command ";
     public static final String USER_SIGN_POSTFIX        = " has joined the chat";

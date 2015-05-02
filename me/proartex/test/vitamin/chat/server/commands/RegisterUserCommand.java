@@ -33,6 +33,12 @@ public class RegisterUserCommand implements Executable, Validatable, ServerComma
             return;
         }
 
+        if (handler.isOverloadedServer()) {
+            Serializable shutdownCommand = new ShutdownCommand(TextConst.SERVER_OVERLOADED);
+            handler.sendCommandToUser(shutdownCommand, user);
+            return;
+        }
+
         if (!isValidUsername()) {
             Serializable invalidCommand = new InvalidUsernameCommand(username);
             handler.sendCommandToUser(invalidCommand, user);

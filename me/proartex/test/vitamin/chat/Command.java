@@ -17,4 +17,5 @@ public abstract class Command {
     public static final int ID_TAKEN_NAME     = 9;
     public static final int ID_SYSTEM_MESSAGE = 10;
     public static final int ID_USER_MESSAGE   = 11;
+    public static final int ID_SHUTDOWN       = 12;
 }

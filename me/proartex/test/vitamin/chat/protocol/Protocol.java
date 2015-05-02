@@ -163,6 +163,9 @@ public class Protocol {
             case Command.ID_USER_MESSAGE:
                 return new UserMessageCommand();
 
+            case Command.ID_SHUTDOWN:
+                return new ShutdownCommand();
+
             default:
                 return new InvalidCommand();
         }

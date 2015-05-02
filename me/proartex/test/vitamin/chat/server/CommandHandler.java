@@ -55,6 +55,10 @@ public class CommandHandler {
         return registeredUsers.containsUserWith(username);
     }
 
+    public boolean isOverloadedServer() {
+        return registeredUsers.count() >= Server.USER_LIMIT;
+    }
+
     public void registerUser(User user, SelectionKey key) {
         notRegisteredUsers.remove(key);
         registeredUsers.add(key, user);

@@ -55,7 +55,7 @@ public class Client implements Runnable {
 
     public void stop() throws ClientException {
         clientThread.interrupt();
-//        throw new UnsupportedOperationException("blocking-read() interrupting impossible");
+//        throw new UnsupportedOperationException("blocking-read() interrupting is impossible");
     }
 
     public void setRegistered(boolean isRegistered) {
@@ -115,7 +115,7 @@ public class Client implements Runnable {
                 break;
             }
             catch (IOException ignore) {
-                /*NOP*/
+                /*NOP*/ //TODO: ???
             }
             catch (Throwable t) {
                 break;
